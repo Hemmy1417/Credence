@@ -13,7 +13,6 @@
 
 from genlayer import *
 import json
-import hashlib
 
 ALLOWED_PLATFORMS = ("github", "url")
 MAX_LEN = 256
@@ -38,7 +37,12 @@ class Credence(gl.Contract):
         self.latest = DynArray()
 
     # ------------------------------------------------------------------ helpers (deterministic)
-    def _norm(self, platform: str, handle: str) -> tuple[str, str]:
+    # NOTE: helper methods are intentionally left without return-type annotations.
+    # gl.Contract validates annotations against GenLayer's own type system, which does
+    # not accept builtin generics like tuple[...] or dict; annotating these breaks the
+    # contract schema. Their bodies still use plain Python tuples/dicts at runtime, which
+    # is fine.
+    def _norm(self, platform: str, handle: str):
         p = platform.strip().lower()
         h = handle.strip().lower()
         if h.startswith("@"):
@@ -56,14 +60,16 @@ class Credence(gl.Contract):
         return f"{platform}:{handle}"
 
     def _make_code(self, address: str, platform: str, handle: str, nonce: int) -> str:
-        digest = hashlib.sha256(f"{address}:{platform}:{handle}:{nonce}".encode()).hexdigest()
-        return "credence-" + digest[:8]
+        # Deterministic + address-bound + unique, without any hashing library:
+        # validators all share the same state, so this computes identically everywhere.
+        tail = address[-6:].lower() if len(address) >= 6 else address.lower()
+        return f"credence-{tail}-{nonce}"
 
     def _is_valid_url(self, uri: str) -> bool:
         u = uri.strip()
         return (u.startswith("http://") or u.startswith("https://")) and len(u) <= 2048
 
-    def _parse_json(self, raw: str) -> dict:
+    def _parse_json(self, raw: str):
         # LLM output may be wrapped in ``` fences or contain stray text; extract the object.
         s = raw.strip()
         if s.startswith("```"):
@@ -163,14 +169,12 @@ JSON schema:
 
         # ---- deterministic settlement (all validators hold the same agreed verdict) ----
         if verdict.get("verdict") == "VERIFIED":
-            evidence_hash = "0x" + hashlib.sha256(uri.encode()).hexdigest()
             identity = {
                 "address": sender,
                 "platform": p,
                 "handle": h,
                 "status": "VERIFIED",
                 "evidence_uri": uri,
-                "evidence_hash": evidence_hash,
                 "verified_seq": int(self.total_verified),
                 "confidence": verdict.get("confidence", "LOW"),
                 "reasons": verdict.get("reasons", []),

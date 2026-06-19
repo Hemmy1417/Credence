@@ -11,14 +11,15 @@ the frontend. The frontend must parse these — never free-form natural language
   "address": "0x0000000000000000000000000000000000000000",
   "platform": "github",
   "handle": "alice",
-  "challenge_code": "credence-7f3a2b9c",
+  "challenge_code": "credence-a1b2c3-0",
   "status": "PENDING",
-  "instructions": "Post the exact code 'credence-7f3a2b9c' in a public GitHub gist, then submit its URL.",
-  "created_at": 1718800000
+  "instructions": "Post the exact text 'credence-a1b2c3-0' on a public github page, then submit its URL.",
+  "seq": 0
 }
 ```
-- `status` ∈ `PENDING | CONSUMED | EXPIRED`
-- `challenge_code` is derived from the caller's address (+platform+handle+nonce) so it is unique and address-bound.
+- `status` ∈ `PENDING | CONSUMED`
+- `challenge_code` = `credence-{last6 of address}-{seq}` — deterministic, unique and address-bound, computed without any hashing library (GenVM has no guaranteed `hashlib`).
+- `seq` is a monotonic counter used in place of a wall-clock timestamp (GenVM has no guaranteed clock).
 
 ## 2. Verdict JSON (produced by the AI judgement in `submit_proof`)
 ```json
@@ -47,14 +48,16 @@ the frontend. The frontend must parse these — never free-form natural language
   "handle": "alice",
   "status": "VERIFIED",
   "evidence_uri": "https://gist.github.com/alice/abc123",
-  "evidence_hash": "0x...",
-  "verified_at": 1718800400,
+  "verified_seq": 0,
   "confidence": "HIGH",
   "reasons": ["author handle matches", "exact challenge code present"]
 }
 ```
 - `status` ∈ `VERIFIED | REVOKED`
-- `evidence_hash` lets the link survive a later-deleted post as an audit trail.
+- `evidence_uri` is the stored audit trail (the public proof URL). A separate cryptographic
+  `evidence_hash` was dropped for the MVP because GenVM has no guaranteed `hashlib`; it can be
+  re-added later via a GenVM-native hashing primitive if needed.
+- `verified_seq` is a monotonic counter (no wall-clock timestamp in GenVM).
 
 ## 4. Stats JSON (returned by `get_stats`)
 ```json
