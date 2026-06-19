@@ -1,23 +1,18 @@
 # v0.1.0
 # { "Depends": "py-genlayer:1jb45aa8ynh2a9c9xn3b7qqh8sm5q93hwfp7jqmwsfhh8jpz09h6" }
-# ^ REQUIRED runner header — must be the FIRST TWO lines, in this order:
-#   line 1 = version (`# v0.1.0`), line 2 = the Depends comment. Without the version
-#   line GenVM warns "does not start with version" and rejects with invalid_contract.
-#   The Depends hash is pinned to this Studio's GenVM build (copied from a built-in example);
-#   if you move to another network/version, re-copy it from that environment's examples.
+# ^ REQUIRED runner header (first TWO lines): version line then Depends. Hash is pinned to
+#   this Studio's GenVM build (copied from a built-in example); re-copy if you change network.
 #
 # Credence — Intelligent Contract (Phase 1 MVP)
 # On-chain identity verification on GenLayer.
 #
-# API grounded in the official GenLayer docs (June 2026):
-#   - storage:     gl.Contract, TreeMap[K,V], u256, str, gl.storage / class-annotated state
-#   - web fetch:   gl.nondet.web.render(url, mode='text')  (must run inside an eq_principle fn)
-#   - LLM:         gl.exec_prompt(prompt)
-#   - consensus:   gl.eq_principle.prompt_comparative(fn, principle)   (LLM judgement)
-#                  gl.eq_principle.strict_eq(fn)                       (deterministic fetch)
-#
-# >>> VERIFY-IN-STUDIO markers below flag the 3 spots where SDK naming can drift between
-# >>> versions. Load this in GenLayer Studio and confirm those symbols before deploying.
+# Patterns aligned to a known-good contract that loads in this Studio build:
+#   - state uses only TreeMap / u256 / str  (no DynArray — that build can't schema-gen it)
+#   - LLM call:   gl.nondet.exec_prompt(prompt)
+#   - web fetch:  gl.nondet.web.render(url, mode='text')   (inside an eq_principle fn)
+#   - consensus:  gl.eq_principle.prompt_comparative(fn, principle)
+#   - errors:     raise gl.vm.UserError(...)
+#   - sender:     gl.message.sender_account
 
 from genlayer import *
 import json
@@ -26,76 +21,70 @@ ALLOWED_PLATFORMS = ("github", "url")
 MAX_LEN = 256
 
 
+# ----------------------------------------------------------------------- module-level helpers
+def _norm(platform: str, handle: str):
+    p = platform.strip().lower()
+    h = handle.strip().lower()
+    if h.startswith("@"):
+        h = h[1:]
+    if p not in ALLOWED_PLATFORMS:
+        raise gl.vm.UserError(f"unsupported platform '{p}'; allowed: {ALLOWED_PLATFORMS}")
+    if not h or len(h) > MAX_LEN:
+        raise gl.vm.UserError("invalid handle")
+    return p, h
+
+
+def _ckey(address: str, platform: str, handle: str):
+    return f"{address}:{platform}:{handle}"
+
+
+def _ikey(platform: str, handle: str):
+    return f"{platform}:{handle}"
+
+
+def _make_code(address: str, platform: str, handle: str, nonce: int):
+    # Deterministic, address-bound, unique — no hashing library needed.
+    tail = address[-6:].lower() if len(address) >= 6 else address.lower()
+    return f"credence-{tail}-{nonce}"
+
+
+def _is_valid_url(uri: str):
+    u = uri.strip()
+    return (u.startswith("http://") or u.startswith("https://")) and len(u) <= 2048
+
+
+def _parse_json(raw: str):
+    s = raw.strip().replace("```json", "").replace("```", "").strip()
+    start, end = s.find("{"), s.rfind("}")
+    if start == -1 or end == -1:
+        raise gl.vm.UserError("judgement did not return JSON")
+    return json.loads(s[start:end + 1])
+
+
+# ----------------------------------------------------------------------------------- contract
 class Credence(gl.Contract):
-    owner: str
     total_challenges: u256
     total_verified: u256
     challenges: TreeMap[str, str]      # "{address}:{platform}:{handle}" -> challenge JSON
     identities: TreeMap[str, str]      # "{platform}:{handle}"           -> identity JSON
     address_index: TreeMap[str, str]   # "{address}"                     -> JSON list of "platform:handle"
-    latest: DynArray[str]              # ordered "{platform}:{handle}" keys of verified identities
+    verified_index: TreeMap[str, str]  # "{seq}"                         -> "platform:handle" (ordering)
 
     def __init__(self) -> None:
-        self.owner = str(gl.message.sender_address)
         self.total_challenges = u256(0)
         self.total_verified = u256(0)
         self.challenges = TreeMap()
         self.identities = TreeMap()
         self.address_index = TreeMap()
-        self.latest = DynArray()
+        self.verified_index = TreeMap()
 
-    # ------------------------------------------------------------------ helpers (deterministic)
-    # NOTE: helper methods are intentionally left without return-type annotations.
-    # gl.Contract validates annotations against GenLayer's own type system, which does
-    # not accept builtin generics like tuple[...] or dict; annotating these breaks the
-    # contract schema. Their bodies still use plain Python tuples/dicts at runtime, which
-    # is fine.
-    def _norm(self, platform: str, handle: str):
-        p = platform.strip().lower()
-        h = handle.strip().lower()
-        if h.startswith("@"):
-            h = h[1:]
-        if p not in ALLOWED_PLATFORMS:
-            raise Exception(f"unsupported platform '{p}'; allowed: {ALLOWED_PLATFORMS}")
-        if not h or len(h) > MAX_LEN:
-            raise Exception("invalid handle")
-        return p, h
-
-    def _ckey(self, address: str, platform: str, handle: str) -> str:
-        return f"{address}:{platform}:{handle}"
-
-    def _ikey(self, platform: str, handle: str) -> str:
-        return f"{platform}:{handle}"
-
-    def _make_code(self, address: str, platform: str, handle: str, nonce: int) -> str:
-        # Deterministic + address-bound + unique, without any hashing library:
-        # validators all share the same state, so this computes identically everywhere.
-        tail = address[-6:].lower() if len(address) >= 6 else address.lower()
-        return f"credence-{tail}-{nonce}"
-
-    def _is_valid_url(self, uri: str) -> bool:
-        u = uri.strip()
-        return (u.startswith("http://") or u.startswith("https://")) and len(u) <= 2048
-
-    def _parse_json(self, raw: str):
-        # LLM output may be wrapped in ``` fences or contain stray text; extract the object.
-        s = raw.strip()
-        if s.startswith("```"):
-            s = s.strip("`")
-            if s.lower().startswith("json"):
-                s = s[4:]
-        start, end = s.find("{"), s.rfind("}")
-        if start == -1 or end == -1:
-            raise Exception("judgement did not return JSON")
-        return json.loads(s[start:end + 1])
-
-    # ------------------------------------------------------------------ writes
+    # -------------------------------------------------------------------------------- writes
     @gl.public.write
     def request_challenge(self, platform: str, handle: str) -> str:
-        p, h = self._norm(platform, handle)
-        sender = str(gl.message.sender_address)
+        p, h = _norm(platform, handle)
+        sender = str(gl.message.sender_account)
         nonce = int(self.total_challenges)
-        code = self._make_code(sender, p, h, nonce)
+        code = _make_code(sender, p, h, nonce)
         challenge = {
             "address": sender,
             "platform": p,
@@ -105,31 +94,30 @@ class Credence(gl.Contract):
             "instructions": f"Post the exact text '{code}' on a public {p} page, then submit its URL.",
             "seq": nonce,
         }
-        self.challenges[self._ckey(sender, p, h)] = json.dumps(challenge)
+        self.challenges[_ckey(sender, p, h)] = json.dumps(challenge)
         self.total_challenges = u256(nonce + 1)
         return json.dumps(challenge)
 
     @gl.public.write
     def submit_proof(self, platform: str, handle: str, evidence_uri: str) -> str:
-        p, h = self._norm(platform, handle)
-        sender = str(gl.message.sender_address)
+        p, h = _norm(platform, handle)
+        sender = str(gl.message.sender_account)
         uri = evidence_uri.strip()
-        if not self._is_valid_url(uri):
-            raise Exception("invalid evidence_uri")
+        if not _is_valid_url(uri):
+            raise gl.vm.UserError("invalid evidence_uri")
 
-        raw_challenge = self.challenges.get(self._ckey(sender, p, h), "")
+        raw_challenge = self.challenges.get(_ckey(sender, p, h), "")
         if not raw_challenge:
-            raise Exception("no challenge found; call request_challenge first")
+            raise gl.vm.UserError("no challenge found; call request_challenge first")
         challenge = json.loads(raw_challenge)
         if challenge.get("status") != "PENDING":
-            raise Exception("challenge is not pending")
+            raise gl.vm.UserError("challenge is not pending")
         code = challenge["challenge_code"]
 
         # ---- non-deterministic judgement: fetch page + LLM verdict, agreed via consensus ----
         def judge() -> str:
-            # VERIFY-IN-STUDIO (1): web render call name/signature.
             page_text = gl.nondet.web.render(uri, mode="text")
-            snippet = page_text[:6000]  # keep prompt bounded
+            snippet = page_text[:6000]
             prompt = f"""You are an impartial GenLayer validator verifying a social-identity claim.
 Decide whether the fetched page proves the claimant controls the account.
 
@@ -155,39 +143,35 @@ Rules:
 - verdict is one of: "VERIFIED", "REJECTED", "NEEDS_MORE_EVIDENCE".
 - score is an integer 0-100. confidence is one of: "LOW", "MEDIUM", "HIGH".
 
-JSON schema:
+Respond ONLY with this JSON:
 {{"verdict":"...","handle_match":false,"code_found":false,"fetched_ok":false,"score":0,"reasons":["..."],"risk_flags":[],"confidence":"LOW"}}"""
-            # VERIFY-IN-STUDIO (2): exec_prompt call name/signature.
-            return gl.exec_prompt(prompt)
+            return gl.nondet.exec_prompt(prompt)
 
         principle = (
             "Outputs are equivalent if they agree on the verdict value and on the boolean "
             "fields handle_match and code_found, even if reasons are worded differently."
         )
-        # VERIFY-IN-STUDIO (3): equivalence-principle symbol. Official docs show the
-        # namespaced form gl.eq_principle.prompt_comparative; some SDK builds expose the flat
-        # name gl.eq_principle_prompt_comparative — use whichever the loaded SDK provides.
         verdict_raw = gl.eq_principle.prompt_comparative(judge, principle)
 
-        verdict = self._parse_json(verdict_raw)
-        verdict.setdefault("reasons", [])
-        verdict.setdefault("risk_flags", [])
-        verdict.setdefault("score", 0)
-        verdict.setdefault("confidence", "LOW")
+        verdict = _parse_json(verdict_raw)
+        for key, default in (("reasons", []), ("risk_flags", []), ("score", 0), ("confidence", "LOW")):
+            if key not in verdict:
+                verdict[key] = default
 
         # ---- deterministic settlement (all validators hold the same agreed verdict) ----
         if verdict.get("verdict") == "VERIFIED":
+            seq = int(self.total_verified)
+            ikey = _ikey(p, h)
             identity = {
                 "address": sender,
                 "platform": p,
                 "handle": h,
                 "status": "VERIFIED",
                 "evidence_uri": uri,
-                "verified_seq": int(self.total_verified),
+                "verified_seq": seq,
                 "confidence": verdict.get("confidence", "LOW"),
                 "reasons": verdict.get("reasons", []),
             }
-            ikey = self._ikey(p, h)
             self.identities[ikey] = json.dumps(identity)
 
             raw_list = self.address_index.get(sender, "[]")
@@ -196,25 +180,25 @@ JSON schema:
                 keys.append(ikey)
             self.address_index[sender] = json.dumps(keys)
 
-            self.latest.append(ikey)
-            self.total_verified = u256(int(self.total_verified) + 1)
+            self.verified_index[str(seq)] = ikey
+            self.total_verified = u256(seq + 1)
 
             challenge["status"] = "CONSUMED"
-            self.challenges[self._ckey(sender, p, h)] = json.dumps(challenge)
+            self.challenges[_ckey(sender, p, h)] = json.dumps(challenge)
 
         return json.dumps(verdict)
 
     @gl.public.write
     def revoke_identity(self, platform: str, handle: str) -> str:
-        p, h = self._norm(platform, handle)
-        sender = str(gl.message.sender_address)
-        ikey = self._ikey(p, h)
+        p, h = _norm(platform, handle)
+        sender = str(gl.message.sender_account)
+        ikey = _ikey(p, h)
         raw = self.identities.get(ikey, "")
         if not raw:
-            raise Exception("identity not found")
+            raise gl.vm.UserError("identity not found")
         identity = json.loads(raw)
         if identity.get("address") != sender:
-            raise Exception("only the owning address may revoke this identity")
+            raise gl.vm.UserError("only the owning address may revoke this identity")
         identity["status"] = "REVOKED"
         self.identities[ikey] = json.dumps(identity)
 
@@ -223,21 +207,21 @@ JSON schema:
         self.address_index[sender] = json.dumps(keys)
         return json.dumps({"status": "REVOKED", "platform": p, "handle": h})
 
-    # ------------------------------------------------------------------ views
+    # --------------------------------------------------------------------------------- views
     @gl.public.view
     def get_challenge(self, address: str, platform: str, handle: str) -> str:
-        p, h = self._norm(platform, handle)
-        return self.challenges.get(self._ckey(address, p, h), "")
+        p, h = _norm(platform, handle)
+        return self.challenges.get(_ckey(address, p, h), "")
 
     @gl.public.view
     def get_identity(self, platform: str, handle: str) -> str:
-        p, h = self._norm(platform, handle)
-        return self.identities.get(self._ikey(p, h), "")
+        p, h = _norm(platform, handle)
+        return self.identities.get(_ikey(p, h), "")
 
     @gl.public.view
     def resolve_handle(self, platform: str, handle: str) -> str:
-        p, h = self._norm(platform, handle)
-        raw = self.identities.get(self._ikey(p, h), "")
+        p, h = _norm(platform, handle)
+        raw = self.identities.get(_ikey(p, h), "")
         if not raw:
             return ""
         identity = json.loads(raw)
@@ -245,8 +229,8 @@ JSON schema:
 
     @gl.public.view
     def is_verified(self, address: str, platform: str, handle: str) -> bool:
-        p, h = self._norm(platform, handle)
-        raw = self.identities.get(self._ikey(p, h), "")
+        p, h = _norm(platform, handle)
+        raw = self.identities.get(_ikey(p, h), "")
         if not raw:
             return False
         identity = json.loads(raw)
@@ -265,7 +249,11 @@ JSON schema:
     @gl.public.view
     def get_stats(self) -> str:
         by_platform = {plat: 0 for plat in ALLOWED_PLATFORMS}
-        for ikey in self.latest:
+        total = int(self.total_verified)
+        for i in range(total):
+            ikey = self.verified_index.get(str(i), "")
+            if not ikey:
+                continue
             raw = self.identities.get(ikey, "")
             if not raw:
                 continue
@@ -276,21 +264,23 @@ JSON schema:
                     by_platform[plat] += 1
         return json.dumps({
             "total_challenges": int(self.total_challenges),
-            "total_verified": int(self.total_verified),
+            "total_verified": total,
             "by_platform": by_platform,
         })
 
     @gl.public.view
-    def get_latest(self, n: u256) -> str:
+    def get_latest(self, n: int) -> str:
         count = int(n)
+        total = int(self.total_verified)
         out = []
-        keys = list(self.latest)
-        for ikey in reversed(keys):
-            if len(out) >= count:
-                break
-            raw = self.identities.get(ikey, "")
-            if raw:
-                rec = json.loads(raw)
-                if rec.get("status") == "VERIFIED":
-                    out.append(rec)
+        i = total - 1
+        while i >= 0 and len(out) < count:
+            ikey = self.verified_index.get(str(i), "")
+            if ikey:
+                raw = self.identities.get(ikey, "")
+                if raw:
+                    rec = json.loads(raw)
+                    if rec.get("status") == "VERIFIED":
+                        out.append(rec)
+            i -= 1
         return json.dumps(out)
