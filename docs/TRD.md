@@ -34,6 +34,11 @@ Testnet Bradbury** for stronger final testing.
 
 ## 3. Contract interface (canonical)
 
+> **GenVM gotcha — runner comment.** The contract's **first line must be the runner
+> comment** `# { "Depends": "py-genlayer:test" }`. Without it GenVM rejects the file at
+> schema time with `invalid_contract absent_runner_comment`. It must be line 1, before any
+> other comment or import.
+
 ### State
 - `owner: str`
 - `total_challenges: u256`

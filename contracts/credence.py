@@ -1,3 +1,7 @@
+# { "Depends": "py-genlayer:test" }
+# ^ REQUIRED runner comment — must be the FIRST line. GenVM reads it to load the
+#   py-genlayer runner; without it you get `invalid_contract absent_runner_comment`.
+#
 # Credence — Intelligent Contract (Phase 1 MVP)
 # On-chain identity verification on GenLayer.
 #
