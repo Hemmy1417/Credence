@@ -34,10 +34,16 @@ Testnet Bradbury** for stronger final testing.
 
 ## 3. Contract interface (canonical)
 
-> **GenVM gotcha — runner comment.** The contract's **first line must be the runner
-> comment** `# { "Depends": "py-genlayer:test" }`. Without it GenVM rejects the file at
-> schema time with `invalid_contract absent_runner_comment`. It must be line 1, before any
-> other comment or import.
+> **GenVM gotcha — runner header (first TWO lines).** A contract must begin with a version
+> line then a Depends line, in this exact order:
+> ```
+> # v0.1.0
+> # { "Depends": "py-genlayer:<hash>" }
+> ```
+> Missing the header → `invalid_contract absent_runner_comment`. Missing the `# v0.1.0`
+> version line → warn *"runner comment does not start with version"* + `invalid_contract`.
+> The `<hash>` is **pinned to the GenVM build** of the target network — copy it from a
+> built-in example in that environment's Studio rather than hardcoding a guess.
 
 ### State
 - `owner: str`

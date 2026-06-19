@@ -1,6 +1,10 @@
-# { "Depends": "py-genlayer:test" }
-# ^ REQUIRED runner comment — must be the FIRST line. GenVM reads it to load the
-#   py-genlayer runner; without it you get `invalid_contract absent_runner_comment`.
+# v0.1.0
+# { "Depends": "py-genlayer:1jb45aa8ynh2a9c9xn3b7qqh8sm5q93hwfp7jqmwsfhh8jpz09h6" }
+# ^ REQUIRED runner header — must be the FIRST TWO lines, in this order:
+#   line 1 = version (`# v0.1.0`), line 2 = the Depends comment. Without the version
+#   line GenVM warns "does not start with version" and rejects with invalid_contract.
+#   The Depends hash is pinned to this Studio's GenVM build (copied from a built-in example);
+#   if you move to another network/version, re-copy it from that environment's examples.
 #
 # Credence — Intelligent Contract (Phase 1 MVP)
 # On-chain identity verification on GenLayer.
