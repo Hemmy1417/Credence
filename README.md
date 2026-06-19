@@ -22,11 +22,13 @@ _TODO (Phase 4): Vercel link._
 ## Contract details
 | Field | Value |
 |---|---|
-| Network | Studionet / Testnet Bradbury _(TODO)_ |
-| RPC | `https://studio.genlayer.com/api` (Studionet) / `https://rpc-bradbury.genlayer.com` (Bradbury) |
-| Chain ID | `61999` (Studionet) / `4221` (Bradbury) |
-| Contract address | _TODO (Phase 4)_ |
+| Network | **Studionet** (deployed) |
+| RPC | `https://studio.genlayer.com/api` |
+| Chain ID | `61999` |
+| Contract address | `0xfe006b3BC58138D7437Ebb4904076803aCC4527c` |
 | Explorer link | _TODO_ |
+
+> First successful write (`request_challenge`) reached consensus and was ACCEPTED on Studionet.
 
 ## Tech stack
 - **Intelligent Contract:** Python + GenVM (source of truth for verdicts + identity links)
