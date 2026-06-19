@@ -228,13 +228,16 @@ Respond ONLY with this JSON:
         return identity.get("address", "") if identity.get("status") == "VERIFIED" else ""
 
     @gl.public.view
-    def is_verified(self, address: str, platform: str, handle: str) -> bool:
+    def is_verified(self, address: str, platform: str, handle: str) -> str:
+        # Returns JSON "true"/"false" (string return — this GenVM build's schema
+        # generator rejects a bare `-> bool` return type). Frontend JSON.parse() -> boolean.
         p, h = _norm(platform, handle)
         raw = self.identities.get(_ikey(p, h), "")
         if not raw:
-            return False
+            return json.dumps(False)
         identity = json.loads(raw)
-        return identity.get("status") == "VERIFIED" and identity.get("address") == address
+        result = identity.get("status") == "VERIFIED" and identity.get("address") == address
+        return json.dumps(result)
 
     @gl.public.view
     def get_identities_by_address(self, address: str) -> str:
