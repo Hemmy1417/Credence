@@ -3,6 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import { createClient, createAccount, generatePrivateKey } from "genlayer-js";
 import { studionet } from "genlayer-js/chains";
+import { getAddress } from "viem";
 
 export type WalletMethod = "builtin" | "metamask";
 
@@ -100,8 +101,11 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
     setConnecting(true);
     try {
       const accounts: string[] = await provider.request({ method: "eth_requestAccounts" });
-      const addr = accounts?.[0];
-      if (!addr) throw new Error("No account selected.");
+      const raw = accounts?.[0];
+      if (!raw) throw new Error("No account selected.");
+      // Injected wallets (MetaMask, Rabby, …) often return a lowercase address, but the
+      // contract keys state by the EIP-55 checksummed address — normalize so read-backs match.
+      const addr = getAddress(raw);
       try {
         await provider.request({
           method: "wallet_addEthereumChain",
@@ -117,7 +121,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
       } catch {
         /* declined or already added — continue */
       }
-      setClient(createClient({ chain: studionet, account: addr as `0x${string}` }));
+      setClient(createClient({ chain: studionet, account: addr }));
       setAddress(addr);
       setMethod("metamask");
       localStorage.setItem(METHOD_KEY, "metamask");

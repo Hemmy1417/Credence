@@ -95,7 +95,7 @@ export default function VerifyPage() {
       <p className="mt-3 text-foreground/50">
         {connected ? (
           <>
-            Wallet ({method === "metamask" ? "MetaMask" : "Instant"}):{" "}
+            Wallet ({method === "metamask" ? "Browser" : "Instant"}):{" "}
             <span className="font-mono text-gold-bright">{short(address)}</span>
           </>
         ) : (

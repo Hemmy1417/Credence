@@ -72,7 +72,7 @@ export function ConnectButton() {
           {address ? (
             <div className="p-2">
               <div className="text-[0.65rem] uppercase tracking-wider text-foreground/40">
-                {method === "metamask" ? "MetaMask" : "Instant Wallet"}
+                {method === "metamask" ? "Browser Wallet" : "Instant Wallet"}
               </div>
               <div className="font-mono text-sm text-gold-bright break-all mt-1">{address}</div>
               <div className="flex gap-2 mt-3">
@@ -117,13 +117,13 @@ export function ConnectButton() {
                 className="w-full text-left px-3 py-3 mt-1 hover:bg-gold/10 transition-colors disabled:opacity-40"
               >
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="font-medium text-sm">🦊 MetaMask</span>
+                  <span className="font-medium text-sm">🦊 Browser Wallet</span>
                   <span className="display text-[0.5rem] tracking-[0.15em] px-1.5 py-0.5 bg-warn/15 text-warn border border-warn/30">
                     Beta
                   </span>
                 </div>
                 <div className="text-xs text-foreground/45 mt-0.5">
-                  {hasMetaMask ? "Experimental on Studionet" : "Not detected"}
+                  {hasMetaMask ? "MetaMask, Rabby, etc." : "Not detected"}
                 </div>
               </button>
               {err && <p className="px-3 py-2 text-xs text-bad break-words">{err}</p>}
