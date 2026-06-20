@@ -1,7 +1,8 @@
 "use client";
 
-// Thin wrapper around genlayer-js for the Credence contract.
-// All contract reads/writes go through here so the UI never touches the SDK directly.
+// Contract layer for the Credence frontend.
+// READS use an internal read-only client (no user wallet needed).
+// WRITES take the connected wallet's `client` (from useWallet) + address.
 import { createClient, createAccount, generatePrivateKey } from "genlayer-js";
 import { studionet } from "genlayer-js/chains";
 import { CONTRACT_ADDRESS, type Platform } from "./config";
@@ -34,50 +35,27 @@ export type Stats = {
   by_platform: Record<string, number>;
 };
 
-// ---- account: a stable, locally-stored GenLayer account per browser ----
-const LS_KEY = "credence_pk";
+export type ProofResult = { verified: boolean; identity: Identity | null };
 
-function getPrivateKey(): `0x${string}` {
-  let pk = localStorage.getItem(LS_KEY);
-  if (!pk) {
-    pk = generatePrivateKey();
-    localStorage.setItem(LS_KEY, pk);
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type Client = any;
+
+// ---- read-only client (throwaway account, reads never need the user's wallet) ----
+let _readClient: Client = null;
+function readClient(): Client {
+  if (!_readClient) {
+    _readClient = createClient({ chain: studionet, account: createAccount(generatePrivateKey()) });
   }
-  return pk as `0x${string}`;
+  return _readClient;
 }
 
-// lazily-built singletons (browser only)
-let _account: ReturnType<typeof createAccount> | null = null;
-let _client: ReturnType<typeof createClient> | null = null;
-
-function account() {
-  if (!_account) _account = createAccount(getPrivateKey());
-  return _account;
-}
-
-function client() {
-  if (!_client) _client = createClient({ chain: studionet, account: account() });
-  return _client;
-}
-
-export function myAddress(): string {
-  return account().address;
-}
-
-// ---- low-level helpers ----
 function asString(v: unknown): string {
   return typeof v === "string" ? v : v == null ? "" : String(v);
 }
 
 async function read(functionName: string, args: unknown[] = []): Promise<string> {
-  const raw = await client().readContract({ address: CONTRACT_ADDRESS, functionName, args });
+  const raw = await readClient().readContract({ address: CONTRACT_ADDRESS, functionName, args });
   return asString(raw);
-}
-
-async function writeAndWait(functionName: string, args: unknown[] = []) {
-  const hash = await client().writeContract({ address: CONTRACT_ADDRESS, functionName, args });
-  await client().waitForTransactionReceipt({ hash, status: "FINALIZED", interval: 5000, retries: 60 });
-  return hash;
 }
 
 // ---- reads ----
@@ -109,26 +87,42 @@ export async function getChallenge(
   return raw ? (JSON.parse(raw) as Challenge) : null;
 }
 
-// ---- writes (each writes, waits for consensus, then reads fresh state) ----
-export async function requestChallenge(platform: Platform, handle: string): Promise<Challenge> {
-  await writeAndWait("request_challenge", [platform, handle]);
-  const ch = await getChallenge(myAddress(), platform, handle);
+export async function getIdentitiesByAddress(address: string): Promise<Identity[]> {
+  const raw = await read("get_identities_by_address", [address]);
+  return raw ? JSON.parse(raw) : [];
+}
+
+// ---- writes (bound to the connected wallet's client) ----
+async function writeAndWait(client: Client, functionName: string, args: unknown[] = []) {
+  const hash = await client.writeContract({ address: CONTRACT_ADDRESS, functionName, args });
+  await client.waitForTransactionReceipt({ hash, status: "FINALIZED", interval: 5000, retries: 60 });
+  return hash;
+}
+
+export async function requestChallenge(
+  client: Client,
+  address: string,
+  platform: Platform,
+  handle: string,
+): Promise<Challenge> {
+  await writeAndWait(client, "request_challenge", [platform, handle]);
+  const ch = await getChallenge(address, platform, handle);
   if (!ch) throw new Error("Challenge was created but could not be read back.");
   return ch;
 }
 
-export type ProofResult = { verified: boolean; identity: Identity | null };
-
 export async function submitProof(
+  client: Client,
+  address: string,
   platform: Platform,
   handle: string,
   evidenceUri: string,
 ): Promise<ProofResult> {
-  await writeAndWait("submit_proof", [platform, handle, evidenceUri]);
+  await writeAndWait(client, "submit_proof", [platform, handle, evidenceUri]);
   const identity = await getIdentity(platform, handle);
   const verified =
     !!identity &&
     identity.status === "VERIFIED" &&
-    identity.address.toLowerCase() === myAddress().toLowerCase();
+    identity.address.toLowerCase() === address.toLowerCase();
   return { verified, identity: verified ? identity : null };
 }
