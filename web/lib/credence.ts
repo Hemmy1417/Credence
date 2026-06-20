@@ -99,6 +99,15 @@ async function writeAndWait(client: Client, functionName: string, args: unknown[
   return hash;
 }
 
+async function readWith(client: Client, functionName: string, args: unknown[]): Promise<string> {
+  try {
+    const raw = await client.readContract({ address: CONTRACT_ADDRESS, functionName, args });
+    return asString(raw);
+  } catch {
+    return "";
+  }
+}
+
 export async function requestChallenge(
   client: Client,
   address: string,
@@ -106,9 +115,14 @@ export async function requestChallenge(
   handle: string,
 ): Promise<Challenge> {
   await writeAndWait(client, "request_challenge", [platform, handle]);
-  const ch = await getChallenge(address, platform, handle);
-  if (!ch) throw new Error("Challenge was created but could not be read back.");
-  return ch;
+  // On-chain state can lag a beat behind finalization — read back through the same
+  // client (most consistent) and retry briefly before giving up.
+  for (let i = 0; i < 6; i++) {
+    const raw = await readWith(client, "get_challenge", [address, platform, handle]);
+    if (raw) return JSON.parse(raw) as Challenge;
+    await new Promise((r) => setTimeout(r, 1500));
+  }
+  throw new Error('Challenge was created — click "Get code" again to fetch it.');
 }
 
 export async function submitProof(
