@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { PLATFORMS, type Platform } from "@/lib/config";
 import { CredenceMark } from "@/components/Logo";
 import {
@@ -201,6 +202,12 @@ export default function VerifyPage() {
                   ))}
                 </ul>
               )}
+              <Link
+                href={`/u/${result.identity.platform}/${result.identity.handle}`}
+                className="btn-gold notch inline-block px-5 py-2.5 text-xs mt-6"
+              >
+                View public profile →
+              </Link>
             </>
           ) : (
             <>

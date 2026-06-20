@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { PLATFORMS, type Platform } from "@/lib/config";
 import { getLatest, getStats, resolveHandle, type Identity, type Stats } from "@/lib/credence";
 
@@ -139,20 +140,22 @@ export default function RegistryPage() {
         ) : (
           <ul className="divide-y divide-gold/10 border border-gold/15">
             {latest.map((id) => (
-              <li
-                key={`${id.platform}:${id.handle}`}
-                className="p-5 flex items-center justify-between panel-hover bg-black"
-              >
-                <div>
-                  <div className="font-medium">
-                    <span className="text-foreground/50">{id.platform}/</span>
-                    <span className="text-gold-bright">{id.handle}</span>
+              <li key={`${id.platform}:${id.handle}`}>
+                <Link
+                  href={`/u/${id.platform}/${id.handle}`}
+                  className="p-5 flex items-center justify-between panel-hover bg-black"
+                >
+                  <div>
+                    <div className="font-medium">
+                      <span className="text-foreground/50">{id.platform}/</span>
+                      <span className="text-gold-bright">{id.handle}</span>
+                    </div>
+                    <div className="text-xs text-foreground/40 font-mono mt-0.5">{short(id.address)}</div>
                   </div>
-                  <div className="text-xs text-foreground/40 font-mono mt-0.5">{short(id.address)}</div>
-                </div>
-                <span className="display text-[0.65rem] tracking-[0.15em] px-3 py-1 bg-ok/10 text-ok border border-ok/30">
-                  {id.status}
-                </span>
+                  <span className="display text-[0.65rem] tracking-[0.15em] px-3 py-1 bg-ok/10 text-ok border border-ok/30">
+                    {id.status}
+                  </span>
+                </Link>
               </li>
             ))}
           </ul>
