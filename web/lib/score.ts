@@ -36,3 +36,17 @@ function tierFor(score: number): Omit<ScoreResult, "score"> {
   if (score < 70) return { tier: "Trusted", color: "#d4af6a" };
   return { tier: "Highly Trusted", color: "#7fd1a0" };
 }
+
+// Color for a tier string (used with the contract's on-chain get_score).
+export function tierColor(tier: string): string {
+  switch (tier) {
+    case "Highly Trusted":
+      return "#7fd1a0";
+    case "Trusted":
+      return "#d4af6a";
+    case "Emerging":
+      return "#e6b450";
+    default:
+      return "#7b7b7b";
+  }
+}

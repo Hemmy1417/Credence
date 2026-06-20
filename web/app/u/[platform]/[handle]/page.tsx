@@ -1,12 +1,19 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { CredenceMark } from "@/components/Logo";
 import { ScoreRing } from "@/components/ScoreRing";
-import { getIdentitiesByAddress, getIdentity, type Identity } from "@/lib/credence";
-import { computeScore, type ScoreResult } from "@/lib/score";
+import {
+  getIdentity,
+  getScore,
+  transferIdentity,
+  type Identity,
+  type OnchainScore,
+} from "@/lib/credence";
+import { tierColor } from "@/lib/score";
+import { useWallet } from "@/lib/wallet";
 import type { Platform } from "@/lib/config";
 
 export default function ProfilePage() {
@@ -14,29 +21,34 @@ export default function ProfilePage() {
   const platform = (params.platform || "").toLowerCase();
   const handle = (params.handle || "").toLowerCase().replace(/^@/, "");
 
+  const { address: myAddr, client } = useWallet();
+
   const [identity, setIdentity] = useState<Identity | null>(null);
-  const [score, setScore] = useState<ScoreResult | null>(null);
+  const [score, setScore] = useState<OnchainScore | null>(null);
   const [loading, setLoading] = useState(true);
   const [origin, setOrigin] = useState("");
   const [copied, setCopied] = useState("");
 
+  const [newAddr, setNewAddr] = useState("");
+  const [transferring, setTransferring] = useState(false);
+  const [manageMsg, setManageMsg] = useState("");
+
+  const load = useCallback(async () => {
+    try {
+      const id = await getIdentity(platform as Platform, handle);
+      setIdentity(id);
+      if (id?.address) setScore(await getScore(id.address));
+    } catch {
+      setIdentity(null);
+    } finally {
+      setLoading(false);
+    }
+  }, [platform, handle]);
+
   useEffect(() => {
     setOrigin(window.location.origin);
-    (async () => {
-      try {
-        const id = await getIdentity(platform as Platform, handle);
-        setIdentity(id);
-        if (id?.address) {
-          const all = await getIdentitiesByAddress(id.address);
-          setScore(computeScore(all));
-        }
-      } catch {
-        setIdentity(null);
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, [platform, handle]);
+    load();
+  }, [load]);
 
   const profileUrl = `${origin}/u/${platform}/${handle}`;
   const badgeUrl = `${origin}/api/badge/${platform}/${handle}`;
@@ -47,6 +59,25 @@ export default function ProfilePage() {
     setCopied(label);
     setTimeout(() => setCopied(""), 1500);
   }
+
+  async function onTransfer() {
+    if (!client) return;
+    setManageMsg("");
+    setTransferring(true);
+    try {
+      await transferIdentity(client, platform as Platform, handle, newAddr.trim());
+      setNewAddr("");
+      await load();
+      setManageMsg("Transferred — this handle now belongs to the new wallet.");
+    } catch (e) {
+      setManageMsg(e instanceof Error ? e.message : String(e));
+    } finally {
+      setTransferring(false);
+    }
+  }
+
+  const isOwner =
+    !!identity && !!myAddr && identity.address.toLowerCase() === myAddr.toLowerCase();
 
   const verified = identity?.status === "VERIFIED";
 
@@ -134,24 +165,53 @@ export default function ProfilePage() {
             )}
           </section>
 
-          {/* credence score */}
+          {/* credence score — read on-chain via get_score */}
           {verified && score && (
             <section className="panel notch p-7 mt-5 flex items-center gap-6">
-              <ScoreRing score={score.score} color={score.color} size={120} />
+              <ScoreRing score={score.score} color={tierColor(score.tier)} size={120} />
               <div>
-                <p className="eyebrow text-[0.7rem] text-foreground/40">Credence Score</p>
-                <h2 className="display text-2xl mt-2" style={{ color: score.color }}>
+                <p className="eyebrow text-[0.7rem] text-foreground/40">Credence Score · on-chain</p>
+                <h2 className="display text-2xl mt-2" style={{ color: tierColor(score.tier) }}>
                   {score.tier}
                 </h2>
                 <p className="mt-2 text-sm text-foreground/50 normal-case">
-                  This wallet&apos;s overall reputation, from the number and diversity of its verified
-                  links. Other apps can gate on it via the{" "}
+                  Computed on-chain from {score.links} verified link{score.links === 1 ? "" : "s"}.
+                  Other apps can gate on it via the{" "}
                   <a href="/developers" className="text-gold underline underline-offset-4">
                     Credence API
                   </a>
                   .
                 </p>
               </div>
+            </section>
+          )}
+
+          {/* owner controls — transfer this handle to a new wallet */}
+          {verified && isOwner && client && (
+            <section className="panel notch p-7 mt-5">
+              <h2 className="display tracking-[0.08em] text-lg">Manage</h2>
+              <p className="mt-2 text-sm text-foreground/50 normal-case">
+                You own this identity. Transfer it to a new wallet — the binding moves with it, and
+                this handle can never be claimed by anyone else.
+              </p>
+              <div className="mt-4 flex flex-col sm:flex-row gap-3">
+                <input
+                  value={newAddr}
+                  onChange={(e) => setNewAddr(e.target.value)}
+                  placeholder="0x… new wallet address"
+                  className="field flex-1 px-3 py-2.5 text-sm font-mono"
+                />
+                <button
+                  onClick={onTransfer}
+                  disabled={!/^0x[a-fA-F0-9]{40}$/.test(newAddr.trim()) || transferring}
+                  className="btn-gold notch px-5 py-2.5 text-xs"
+                >
+                  {transferring ? "Transferring…" : "Transfer"}
+                </button>
+              </div>
+              {manageMsg && (
+                <p className="mt-3 text-sm text-foreground/60 normal-case break-words">{manageMsg}</p>
+              )}
             </section>
           )}
 

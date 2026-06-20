@@ -28,7 +28,7 @@ _TODO (Phase 4): Vercel link._
 | Network | **Studionet** (deployed) |
 | RPC | `https://studio.genlayer.com/api` |
 | Chain ID | `61999` |
-| Contract address | `0xc4044aafD0Df8121cAf352F4719C808a818FC70d` |
+| Contract address | `0x84752FC7f00330C3AaB94F0C2aA7A5Fc52143D04` (v2) |
 | Explorer link | _TODO_ |
 
 > First successful write (`request_challenge`) reached consensus and was ACCEPTED on Studionet.

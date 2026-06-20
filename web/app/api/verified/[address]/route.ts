@@ -3,7 +3,6 @@
 // can gate on it:  const { verified, score } = await (await fetch(`${BASE}/api/verified/${addr}`)).json()
 import { createClient, createAccount, generatePrivateKey } from "genlayer-js";
 import { studionet } from "genlayer-js/chains";
-import { computeScore } from "@/lib/score";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -19,18 +18,19 @@ type Rec = {
   evidence_uri?: string;
 };
 
-async function identitiesOf(address: string): Promise<Rec[]> {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function client(): any {
+  return createClient({ chain: studionet, account: createAccount(generatePrivateKey()) });
+}
+
+async function readJson(functionName: string, args: unknown[], fallback: unknown) {
   try {
-    const client = createClient({ chain: studionet, account: createAccount(generatePrivateKey()) });
-    const raw = (await client.readContract({
-      address: CONTRACT,
-      functionName: "get_identities_by_address",
-      args: [address],
-    })) as unknown;
+    const c = client();
+    const raw = (await c.readContract({ address: CONTRACT, functionName, args })) as unknown;
     const s = typeof raw === "string" ? raw : "";
-    return s ? (JSON.parse(s) as Rec[]) : [];
+    return s ? JSON.parse(s) : fallback;
   } catch {
-    return [];
+    return fallback;
   }
 }
 
@@ -39,9 +39,15 @@ export async function GET(
   { params }: { params: Promise<{ address: string }> },
 ) {
   const { address } = await params;
-  const all = await identitiesOf(address);
+  const all = (await readJson("get_identities_by_address", [address], [])) as Rec[];
+  const sc = (await readJson("get_score", [address], { score: 0, tier: "Unverified", links: 0 })) as {
+    score: number;
+    tier: string;
+    links: number;
+  };
   const verifiedList = all.filter((i) => i.status === "VERIFIED");
-  const { score, tier } = computeScore(all);
+  const score = sc.score;
+  const tier = sc.tier;
 
   return Response.json(
     {

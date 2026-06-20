@@ -152,3 +152,21 @@ export async function submitProof(
     identity.address.toLowerCase() === address.toLowerCase();
   return { verified, identity: verified ? identity : null };
 }
+
+// ---- v2: canonical on-chain Credence Score ----
+export type OnchainScore = { address: string; score: number; tier: string; links: number };
+
+export async function getScore(address: string): Promise<OnchainScore> {
+  const raw = await read("get_score", [address]);
+  return raw ? JSON.parse(raw) : { address, score: 0, tier: "Unverified", links: 0 };
+}
+
+// ---- v2: owner-only transfer of a verified handle to a new wallet ----
+export async function transferIdentity(
+  client: Client,
+  platform: Platform,
+  handle: string,
+  newAddress: string,
+): Promise<void> {
+  await writeAndWait(client, "transfer_identity", [platform, handle, newAddress]);
+}

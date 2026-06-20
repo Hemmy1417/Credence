@@ -3,13 +3,11 @@
 export const CONTRACT_ADDRESS = (process.env.NEXT_PUBLIC_CONTRACT_ADDRESS || "") as `0x${string}`;
 export const EXPLORER_URL = process.env.NEXT_PUBLIC_EXPLORER_URL || "";
 
-// Platforms the deployed contract accepts (immutable). Everything else verifies
-// through the generic "url" platform until a contract v2 adds first-class types.
-export const PLATFORMS = ["github", "url"] as const;
+// First-class platforms the v2 contract accepts.
+export const PLATFORMS = ["github", "x", "domain", "discord", "url"] as const;
 export type Platform = (typeof PLATFORMS)[number];
 
-// User-facing verification methods. Each maps to a contract platform; X/domain/etc.
-// ride on "url" with tailored guidance — no redeploy required.
+// User-facing verification methods. Each maps to a first-class contract platform.
 export type Method = {
   id: string;
   label: string;
@@ -35,7 +33,7 @@ export const METHODS: Method[] = [
   {
     id: "x",
     label: "X / Twitter",
-    platform: "url",
+    platform: "x",
     handlePlaceholder: "your @handle",
     evidencePlaceholder: "https://x.com/you/status/…",
     hint: "Post the exact code in a public tweet, then paste the tweet URL.",
@@ -43,10 +41,18 @@ export const METHODS: Method[] = [
   {
     id: "domain",
     label: "Website / Domain",
-    platform: "url",
+    platform: "domain",
     handlePlaceholder: "yourdomain.com",
     evidencePlaceholder: "https://yourdomain.com/.well-known/credence.txt",
     hint: "Host the code at https://yourdomain.com/.well-known/credence.txt, then paste that URL.",
+  },
+  {
+    id: "discord",
+    label: "Discord",
+    platform: "discord",
+    handlePlaceholder: "your Discord username",
+    evidencePlaceholder: "https://… link to a public message/profile",
+    hint: "Put the exact code on a public Discord message or profile, then paste its link.",
   },
   {
     id: "url",
