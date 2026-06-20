@@ -110,8 +110,9 @@ export default function VerifyPage() {
           </div>
           <h2 className="display tracking-[0.08em] text-lg">Connect your wallet</h2>
           <p className="mt-2 text-sm text-foreground/55 normal-case">
-            Your verified identity links to this wallet. Use MetaMask from the top-right, or spin up
-            an instant in-browser wallet.
+            Your verified identity links to this wallet. The Instant Wallet is recommended — no
+            extension, and gas is sponsored on Studionet. MetaMask is also available (Beta) from the
+            top-right.
           </p>
           <button onClick={connectBuiltIn} className="btn-gold notch px-6 py-3 text-xs mt-6">
             ⚡ Create Instant Wallet

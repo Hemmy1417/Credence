@@ -95,23 +95,35 @@ export function ConnectButton() {
               <p className="px-2 py-2 text-[0.65rem] uppercase tracking-wider text-foreground/40">
                 Choose a wallet
               </p>
+              {/* Instant Wallet — primary, recommended */}
+              <button
+                onClick={onBuiltIn}
+                className="w-full text-left px-3 py-3 border border-gold/30 bg-gold/5 hover:bg-gold/10 transition-colors"
+              >
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-medium text-sm">⚡ Instant Wallet</span>
+                  <span className="display text-[0.5rem] tracking-[0.15em] px-1.5 py-0.5 bg-ok/15 text-ok border border-ok/30">
+                    Recommended
+                  </span>
+                </div>
+                <div className="text-xs text-foreground/45 mt-0.5">
+                  No extension · gas sponsored on Studionet
+                </div>
+              </button>
+              {/* MetaMask — beta */}
               <button
                 onClick={onMetaMask}
                 disabled={!hasMetaMask}
-                className="w-full text-left px-3 py-3 hover:bg-gold/10 transition-colors disabled:opacity-40"
+                className="w-full text-left px-3 py-3 mt-1 hover:bg-gold/10 transition-colors disabled:opacity-40"
               >
-                <div className="font-medium text-sm">🦊 MetaMask</div>
-                <div className="text-xs text-foreground/45">
-                  {hasMetaMask ? "Use your own wallet" : "Not detected"}
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-medium text-sm">🦊 MetaMask</span>
+                  <span className="display text-[0.5rem] tracking-[0.15em] px-1.5 py-0.5 bg-warn/15 text-warn border border-warn/30">
+                    Beta
+                  </span>
                 </div>
-              </button>
-              <button
-                onClick={onBuiltIn}
-                className="w-full text-left px-3 py-3 hover:bg-gold/10 transition-colors"
-              >
-                <div className="font-medium text-sm">⚡ Instant Wallet</div>
-                <div className="text-xs text-foreground/45">
-                  No extension — created in your browser
+                <div className="text-xs text-foreground/45 mt-0.5">
+                  {hasMetaMask ? "Experimental on Studionet" : "Not detected"}
                 </div>
               </button>
               {err && <p className="px-3 py-2 text-xs text-bad break-words">{err}</p>}
