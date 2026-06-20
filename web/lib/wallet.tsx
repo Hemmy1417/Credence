@@ -15,6 +15,13 @@ type WalletState = {
   client: Client | null;
   connecting: boolean;
   hasMetaMask: boolean;
+  // gas
+  chainName: string;
+  gasSponsored: boolean; // true on Studionet — the network covers gas
+  balanceWei: bigint | null;
+  refreshBalance: () => Promise<void>;
+  requestTestGen: () => Promise<{ ok: boolean; message: string }>;
+  // connection
   connectBuiltIn: () => void;
   connectMetaMask: () => Promise<void>;
   disconnect: () => void;
@@ -24,6 +31,8 @@ const Ctx = createContext<WalletState | null>(null);
 const PK_KEY = "credence_pk";
 const METHOD_KEY = "credence_wallet_method";
 const STUDIONET_HEX = "0xF22F"; // 61999
+const CHAIN_NAME = "Studionet";
+const GAS_SPONSORED = true; // Studionet (chain 61999) sponsors gas for contract calls
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function eth(): any {
@@ -36,6 +45,41 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
   const [client, setClient] = useState<Client | null>(null);
   const [connecting, setConnecting] = useState(false);
   const [hasMetaMask, setHasMetaMask] = useState(false);
+  const [balanceWei, setBalanceWei] = useState<bigint | null>(null);
+
+  const refreshBalance = useCallback(async () => {
+    if (!client || !address) {
+      setBalanceWei(null);
+      return;
+    }
+    try {
+      const b = await client.getBalance({ address });
+      setBalanceWei(BigInt(b));
+    } catch {
+      setBalanceWei(null);
+    }
+  }, [client, address]);
+
+  useEffect(() => {
+    refreshBalance();
+  }, [refreshBalance]);
+
+  const requestTestGen = useCallback(async (): Promise<{ ok: boolean; message: string }> => {
+    if (!client || !address) return { ok: false, message: "Connect a wallet first." };
+    try {
+      // Programmatic faucet — works on localnet; Studionet/testnet throw and we handle it.
+      await client.fundAccount(address, BigInt("1000000000000000000"));
+      await refreshBalance();
+      return { ok: true, message: "Funded with test GEN." };
+    } catch {
+      return {
+        ok: false,
+        message: GAS_SPONSORED
+          ? "Studionet sponsors gas — no top-up needed. You're clear to verify."
+          : "Open the GenLayer faucet to fund this wallet, then refresh.",
+      };
+    }
+  }, [client, address, refreshBalance]);
 
   const connectBuiltIn = useCallback(() => {
     let pk = localStorage.getItem(PK_KEY);
@@ -58,7 +102,6 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
       const accounts: string[] = await provider.request({ method: "eth_requestAccounts" });
       const addr = accounts?.[0];
       if (!addr) throw new Error("No account selected.");
-      // best-effort: make sure MetaMask knows the Studionet chain
       try {
         await provider.request({
           method: "wallet_addEthereumChain",
@@ -72,7 +115,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
           ],
         });
       } catch {
-        /* user may decline or chain already added — continue */
+        /* declined or already added — continue */
       }
       setClient(createClient({ chain: studionet, account: addr as `0x${string}` }));
       setAddress(addr);
@@ -87,10 +130,10 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
     setAddress("");
     setClient(null);
     setMethod(null);
+    setBalanceWei(null);
     localStorage.removeItem(METHOD_KEY);
   }, []);
 
-  // restore previous session (built-in only — MetaMask needs a user gesture)
   useEffect(() => {
     setHasMetaMask(!!eth());
     if (localStorage.getItem(METHOD_KEY) === "builtin") connectBuiltIn();
@@ -98,7 +141,21 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <Ctx.Provider
-      value={{ address, method, client, connecting, hasMetaMask, connectBuiltIn, connectMetaMask, disconnect }}
+      value={{
+        address,
+        method,
+        client,
+        connecting,
+        hasMetaMask,
+        chainName: CHAIN_NAME,
+        gasSponsored: GAS_SPONSORED,
+        balanceWei,
+        refreshBalance,
+        requestTestGen,
+        connectBuiltIn,
+        connectMetaMask,
+        disconnect,
+      }}
     >
       {children}
     </Ctx.Provider>
@@ -109,4 +166,10 @@ export function useWallet(): WalletState {
   const v = useContext(Ctx);
   if (!v) throw new Error("useWallet must be used within WalletProvider");
   return v;
+}
+
+export function formatGen(wei: bigint | null): string {
+  if (wei == null) return "—";
+  const gen = Number(wei) / 1e18;
+  return gen === 0 ? "0" : gen.toLocaleString(undefined, { maximumFractionDigits: 4 });
 }

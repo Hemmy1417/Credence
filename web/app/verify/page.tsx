@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { METHODS } from "@/lib/config";
 import { CredenceMark } from "@/components/Logo";
-import { useWallet } from "@/lib/wallet";
+import { formatGen, useWallet } from "@/lib/wallet";
 import { requestChallenge, submitProof, type Challenge, type ProofResult } from "@/lib/credence";
 
 function short(addr: string) {
@@ -12,7 +12,17 @@ function short(addr: string) {
 }
 
 export default function VerifyPage() {
-  const { address, client, method, connectBuiltIn } = useWallet();
+  const {
+    address,
+    client,
+    method,
+    connectBuiltIn,
+    chainName,
+    gasSponsored,
+    balanceWei,
+    refreshBalance,
+    requestTestGen,
+  } = useWallet();
 
   const [methodId, setMethodId] = useState("github");
   const selectedMethod = METHODS.find((m) => m.id === methodId) ?? METHODS[0];
@@ -25,7 +35,22 @@ export default function VerifyPage() {
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
 
+  const [genMsg, setGenMsg] = useState("");
+  const [funding, setFunding] = useState(false);
+
   const connected = !!client && !!address;
+  const gasReady = gasSponsored || (balanceWei != null && balanceWei > 0n);
+
+  async function onGetGen() {
+    setGenMsg("");
+    setFunding(true);
+    try {
+      const r = await requestTestGen();
+      setGenMsg(r.message);
+    } finally {
+      setFunding(false);
+    }
+  }
 
   async function onRequest() {
     if (!connected) return;
@@ -94,8 +119,54 @@ export default function VerifyPage() {
         </section>
       ) : (
         <>
+          {/* GAS READINESS */}
+          <section className="panel notch p-6 mt-9">
+            <div className="flex items-start justify-between gap-4 flex-wrap">
+              <div>
+                <p className="eyebrow text-[0.7rem] text-foreground/40">Gas readiness</p>
+                <div className="mt-2 text-sm text-foreground/60">
+                  Network: <span className="text-foreground/85">{chainName}</span>
+                  <span className="mx-2 text-foreground/20">·</span>
+                  Balance: <span className="font-mono text-gold-bright">{formatGen(balanceWei)} GEN</span>
+                </div>
+              </div>
+              <span
+                className={`display text-[0.65rem] tracking-[0.15em] px-3 py-1 border ${
+                  gasReady ? "text-ok bg-ok/10 border-ok/40" : "text-warn bg-warn/10 border-warn/40"
+                }`}
+              >
+                {gasReady ? "Ready" : "Needs GEN"}
+              </span>
+            </div>
+            <p className="mt-3 text-sm text-foreground/50 normal-case">
+              {gasSponsored
+                ? "Studionet sponsors gas, so verifying is free here. On Testnet Bradbury or mainnet you'd top up GEN before verifying — this step handles that."
+                : "You need GEN to cover the gas fee before you can verify."}
+            </p>
+            <div className="mt-4 flex items-center gap-4 flex-wrap">
+              <button
+                onClick={onGetGen}
+                disabled={funding}
+                className="btn-ghost notch px-4 py-2 text-[0.65rem]"
+              >
+                {funding ? "Requesting…" : "Get test GEN"}
+              </button>
+              <button
+                onClick={refreshBalance}
+                className="text-xs text-foreground/40 hover:text-gold-bright transition-colors"
+              >
+                Refresh balance
+              </button>
+              {genMsg && <span className="text-xs text-foreground/55 normal-case">{genMsg}</span>}
+            </div>
+          </section>
+
           {/* STEP 1 */}
-          <section className="panel notch p-7 mt-9">
+          <section
+            className={`panel notch p-7 mt-5 transition-opacity ${
+              gasReady ? "" : "opacity-40 pointer-events-none"
+            }`}
+          >
             <div className="flex items-center gap-3">
               <span className="display gold-text text-2xl">01</span>
               <h2 className="display tracking-[0.08em] text-lg">Request your code</h2>
