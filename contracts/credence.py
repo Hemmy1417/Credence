@@ -12,7 +12,7 @@
 #   - web fetch:  gl.nondet.web.render(url, mode='text')   (inside an eq_principle fn)
 #   - consensus:  gl.eq_principle.prompt_comparative(fn, principle)
 #   - errors:     raise gl.vm.UserError(...)
-#   - sender:     gl.message.sender_account
+#   - sender:     gl.message.sender_address  (MessageType has sender_address, NOT sender_account)
 
 from genlayer import *
 import json
@@ -82,7 +82,7 @@ class Credence(gl.Contract):
     @gl.public.write
     def request_challenge(self, platform: str, handle: str) -> str:
         p, h = _norm(platform, handle)
-        sender = str(gl.message.sender_account)
+        sender = str(gl.message.sender_address)
         nonce = int(self.total_challenges)
         code = _make_code(sender, p, h, nonce)
         challenge = {
@@ -101,7 +101,7 @@ class Credence(gl.Contract):
     @gl.public.write
     def submit_proof(self, platform: str, handle: str, evidence_uri: str) -> str:
         p, h = _norm(platform, handle)
-        sender = str(gl.message.sender_account)
+        sender = str(gl.message.sender_address)
         uri = evidence_uri.strip()
         if not _is_valid_url(uri):
             raise gl.vm.UserError("invalid evidence_uri")
@@ -191,7 +191,7 @@ Respond ONLY with this JSON:
     @gl.public.write
     def revoke_identity(self, platform: str, handle: str) -> str:
         p, h = _norm(platform, handle)
-        sender = str(gl.message.sender_account)
+        sender = str(gl.message.sender_address)
         ikey = _ikey(p, h)
         raw = self.identities.get(ikey, "")
         if not raw:
