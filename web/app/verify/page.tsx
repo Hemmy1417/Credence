@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { PLATFORMS, type Platform } from "@/lib/config";
+import { METHODS } from "@/lib/config";
 import { CredenceMark } from "@/components/Logo";
 import { useWallet } from "@/lib/wallet";
 import { requestChallenge, submitProof, type Challenge, type ProofResult } from "@/lib/credence";
@@ -14,7 +14,8 @@ function short(addr: string) {
 export default function VerifyPage() {
   const { address, client, method, connectBuiltIn } = useWallet();
 
-  const [platform, setPlatform] = useState<Platform>("github");
+  const [methodId, setMethodId] = useState("github");
+  const selectedMethod = METHODS.find((m) => m.id === methodId) ?? METHODS[0];
   const [handle, setHandle] = useState("");
   const [gistUrl, setGistUrl] = useState("");
 
@@ -32,7 +33,7 @@ export default function VerifyPage() {
     setResult(null);
     setBusy("challenge");
     try {
-      setChallenge(await requestChallenge(client, address, platform, handle.trim()));
+      setChallenge(await requestChallenge(client, address, selectedMethod.platform, handle.trim()));
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -45,7 +46,7 @@ export default function VerifyPage() {
     setError("");
     setBusy("proof");
     try {
-      setResult(await submitProof(client, address, platform, handle.trim(), gistUrl.trim()));
+      setResult(await submitProof(client, address, selectedMethod.platform, handle.trim(), gistUrl.trim()));
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -101,20 +102,24 @@ export default function VerifyPage() {
             </div>
             <div className="mt-5 flex flex-col sm:flex-row gap-3">
               <select
-                value={platform}
-                onChange={(e) => setPlatform(e.target.value as Platform)}
+                value={methodId}
+                onChange={(e) => {
+                  setMethodId(e.target.value);
+                  setChallenge(null);
+                  setResult(null);
+                }}
                 className="field px-3 py-2.5 text-sm"
               >
-                {PLATFORMS.map((p) => (
-                  <option key={p} value={p} className="bg-black">
-                    {p}
+                {METHODS.map((m) => (
+                  <option key={m.id} value={m.id} className="bg-black">
+                    {m.label}
                   </option>
                 ))}
               </select>
               <input
                 value={handle}
                 onChange={(e) => setHandle(e.target.value)}
-                placeholder={platform === "github" ? "your GitHub username" : "your handle"}
+                placeholder={selectedMethod.handlePlaceholder}
                 className="field flex-1 px-3 py-2.5 text-sm"
               />
               <button
@@ -128,9 +133,7 @@ export default function VerifyPage() {
 
             {challenge && (
               <div className="mt-5 border border-gold/20 bg-black/50 p-5">
-                <p className="text-xs text-foreground/50 uppercase tracking-wider">
-                  Post this exact text on a public {platform} page
-                </p>
+                <p className="text-xs text-foreground/50 uppercase tracking-wider">Your one-time code</p>
                 <div className="mt-3 flex items-center gap-3 flex-wrap">
                   <code className="font-mono text-xl text-gold-bright select-all break-all">
                     {challenge.challenge_code}
@@ -139,14 +142,15 @@ export default function VerifyPage() {
                     {copied ? "Copied" : "Copy"}
                   </button>
                 </div>
-                {platform === "github" && (
+                <p className="mt-3 text-sm text-foreground/55 normal-case">{selectedMethod.hint}</p>
+                {selectedMethod.cta && selectedMethod.ctaUrl && (
                   <a
-                    href="https://gist.github.com"
+                    href={selectedMethod.ctaUrl}
                     target="_blank"
                     rel="noreferrer"
-                    className="inline-block mt-4 text-sm text-gold hover:text-gold-bright underline underline-offset-4"
+                    className="inline-block mt-3 text-sm text-gold hover:text-gold-bright underline underline-offset-4"
                   >
-                    Open gist.github.com →
+                    {selectedMethod.cta}
                   </a>
                 )}
               </div>
@@ -167,7 +171,7 @@ export default function VerifyPage() {
               <input
                 value={gistUrl}
                 onChange={(e) => setGistUrl(e.target.value)}
-                placeholder="https://gist.github.com/you/…"
+                placeholder={selectedMethod.evidencePlaceholder}
                 className="field flex-1 px-3 py-2.5 text-sm"
               />
               <button

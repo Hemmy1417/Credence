@@ -24,6 +24,7 @@ const navLinks = [
   { href: "/", label: "Home" },
   { href: "/verify", label: "Verify" },
   { href: "/registry", label: "Registry" },
+  { href: "/developers", label: "Developers" },
 ];
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

@@ -4,7 +4,9 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { CredenceMark } from "@/components/Logo";
-import { getIdentity, type Identity } from "@/lib/credence";
+import { ScoreRing } from "@/components/ScoreRing";
+import { getIdentitiesByAddress, getIdentity, type Identity } from "@/lib/credence";
+import { computeScore, type ScoreResult } from "@/lib/score";
 import type { Platform } from "@/lib/config";
 
 export default function ProfilePage() {
@@ -13,6 +15,7 @@ export default function ProfilePage() {
   const handle = (params.handle || "").toLowerCase().replace(/^@/, "");
 
   const [identity, setIdentity] = useState<Identity | null>(null);
+  const [score, setScore] = useState<ScoreResult | null>(null);
   const [loading, setLoading] = useState(true);
   const [origin, setOrigin] = useState("");
   const [copied, setCopied] = useState("");
@@ -21,7 +24,12 @@ export default function ProfilePage() {
     setOrigin(window.location.origin);
     (async () => {
       try {
-        setIdentity(await getIdentity(platform as Platform, handle));
+        const id = await getIdentity(platform as Platform, handle);
+        setIdentity(id);
+        if (id?.address) {
+          const all = await getIdentitiesByAddress(id.address);
+          setScore(computeScore(all));
+        }
       } catch {
         setIdentity(null);
       } finally {
@@ -125,6 +133,27 @@ export default function ProfilePage() {
               </p>
             )}
           </section>
+
+          {/* credence score */}
+          {verified && score && (
+            <section className="panel notch p-7 mt-5 flex items-center gap-6">
+              <ScoreRing score={score.score} color={score.color} size={120} />
+              <div>
+                <p className="eyebrow text-[0.7rem] text-foreground/40">Credence Score</p>
+                <h2 className="display text-2xl mt-2" style={{ color: score.color }}>
+                  {score.tier}
+                </h2>
+                <p className="mt-2 text-sm text-foreground/50 normal-case">
+                  This wallet&apos;s overall reputation, from the number and diversity of its verified
+                  links. Other apps can gate on it via the{" "}
+                  <a href="/developers" className="text-gold underline underline-offset-4">
+                    Credence API
+                  </a>
+                  .
+                </p>
+              </div>
+            </section>
+          )}
 
           {/* share / embed */}
           <section className="panel notch p-7 mt-5">
