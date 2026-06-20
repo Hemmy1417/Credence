@@ -352,12 +352,20 @@ export default function VerifyPage() {
                       ))}
                     </ul>
                   )}
-                  <Link
-                    href={`/u/${result.identity.platform}/${result.identity.handle}`}
-                    className="btn-gold notch inline-block px-5 py-2.5 text-xs mt-6"
-                  >
-                    View public profile →
-                  </Link>
+                  <div className="mt-6 border-t border-ok/20 pt-5">
+                    <p className="text-sm text-foreground/60 normal-case">
+                      <strong className="text-foreground/85">Next step:</strong> open your public
+                      profile. It shows your Credence Score, every verified link, and a shareable
+                      badge you can post or embed anywhere — it&apos;s how others check that this
+                      identity is really yours.
+                    </p>
+                    <Link
+                      href={`/u/${result.identity.platform}/${result.identity.handle}`}
+                      className="btn-gold notch inline-block px-5 py-2.5 text-xs mt-4"
+                    >
+                      View public profile →
+                    </Link>
+                  </div>
                 </>
               ) : (
                 <>
