@@ -1,8 +1,5 @@
 # v0.1.0
 # { "Depends": "py-genlayer:1jb45aa8ynh2a9c9xn3b7qqh8sm5q93hwfp7jqmwsfhh8jpz09h6" }
-# IMPORTANT: keep ONLY the two lines above as leading comments. GenVM parses the leading
-# comment block as the runner header — extra comment lines (or non-ASCII chars) here can
-# break deploy. All design/SDK notes live in docs/TRD.md instead.
 
 from genlayer import *
 import json

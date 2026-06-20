@@ -3,7 +3,9 @@
 > Prove you control a social account and link it to your wallet — verified by a GenLayer
 > Intelligent Contract, not a centralized database.
 
-**Status:** Phase 0 complete (planning). Build driven by `docs/AGENT_BUILD_PROMPT.md`.
+**Status:** ✅ **Phase 1 complete** — contract is live on Studionet and verifying real identities. A
+GitHub gist proof was judged `VERIFIED` (score 98, HIGH confidence) by a 3-model AI validator
+panel (GPT-5.4 / MiniMax / DeepSeek) reaching consensus. Next: Phase 2 frontend.
 
 ## Project summary
 On-chain accounts are anonymous. Credence lets a user request a unique challenge code, post
