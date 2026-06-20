@@ -14,7 +14,6 @@ export default function RegistryPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  // resolver
   const [platform, setPlatform] = useState<Platform>("github");
   const [handle, setHandle] = useState("");
   const [resolved, setResolved] = useState<string | null>(null);
@@ -42,8 +41,7 @@ export default function RegistryPage() {
     setResolving(true);
     setResolved(null);
     try {
-      const addr = await resolveHandle(platform, handle.trim());
-      setResolved(addr || "");
+      setResolved((await resolveHandle(platform, handle.trim())) || "");
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -51,42 +49,49 @@ export default function RegistryPage() {
     }
   }
 
+  const cards: [string | number, string][] = [
+    [stats?.total_verified ?? "—", "Verified identities"],
+    [stats?.total_challenges ?? "—", "Challenges issued"],
+    [stats?.by_platform?.github ?? "—", "GitHub verified"],
+  ];
+
   return (
-    <div className="mx-auto max-w-3xl px-5 py-12">
-      <div className="flex items-end justify-between">
-        <h1 className="text-3xl font-bold tracking-tight">Verified registry</h1>
-        <button onClick={refresh} className="text-sm px-3 py-1.5 rounded-lg border border-white/15 hover:bg-white/5">
+    <div className="mx-auto max-w-3xl px-5 py-14">
+      <div className="flex items-end justify-between flex-wrap gap-3">
+        <div>
+          <p className="eyebrow text-[0.7rem] text-gold/80">Public ledger</p>
+          <h1 className="display mt-4 text-4xl sm:text-5xl">
+            Verified <span className="gold-text">registry</span>
+          </h1>
+        </div>
+        <button onClick={refresh} className="btn-ghost notch px-4 py-2 text-[0.65rem]">
           Refresh
         </button>
       </div>
 
       {/* stats */}
-      <div className="mt-6 grid grid-cols-2 sm:grid-cols-3 gap-3">
-        <div className="card p-4">
-          <div className="text-2xl font-bold text-brand">{stats?.total_verified ?? "—"}</div>
-          <div className="text-xs text-white/50">verified identities</div>
-        </div>
-        <div className="card p-4">
-          <div className="text-2xl font-bold">{stats?.total_challenges ?? "—"}</div>
-          <div className="text-xs text-white/50">challenges issued</div>
-        </div>
-        <div className="card p-4">
-          <div className="text-2xl font-bold">{stats?.by_platform?.github ?? "—"}</div>
-          <div className="text-xs text-white/50">github verified</div>
-        </div>
+      <div className="mt-8 grid grid-cols-3 gap-px bg-gold/10 border border-gold/15">
+        {cards.map(([v, l]) => (
+          <div key={l} className="bg-black p-5">
+            <div className="display text-3xl gold-text">{v}</div>
+            <div className="text-[0.7rem] uppercase tracking-wider text-foreground/45 mt-1">{l}</div>
+          </div>
+        ))}
       </div>
 
       {/* resolver */}
-      <section className="card p-6 mt-6">
-        <h2 className="font-semibold">Resolve a handle → address</h2>
-        <div className="mt-4 flex flex-col sm:flex-row gap-3">
+      <section className="panel notch p-7 mt-6">
+        <h2 className="display tracking-[0.08em] text-lg">
+          Resolve a handle <span className="text-gold">→</span> address
+        </h2>
+        <div className="mt-5 flex flex-col sm:flex-row gap-3">
           <select
             value={platform}
             onChange={(e) => setPlatform(e.target.value as Platform)}
-            className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 outline-none"
+            className="field px-3 py-2.5 text-sm"
           >
             {PLATFORMS.map((p) => (
-              <option key={p} value={p} className="bg-[#0b1020]">
+              <option key={p} value={p} className="bg-black">
                 {p}
               </option>
             ))}
@@ -95,22 +100,24 @@ export default function RegistryPage() {
             value={handle}
             onChange={(e) => setHandle(e.target.value)}
             placeholder="handle to look up"
-            className="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-2 outline-none"
+            className="field flex-1 px-3 py-2.5 text-sm"
           />
           <button
             onClick={onResolve}
             disabled={!handle.trim() || resolving}
-            className="px-4 py-2 rounded-lg bg-brand text-white font-medium disabled:opacity-40"
+            className="btn-gold notch px-5 py-2.5 text-xs"
           >
             {resolving ? "…" : "Resolve"}
           </button>
         </div>
         {resolved !== null && (
-          <p className="mt-3 text-sm">
+          <p className="mt-4 text-sm">
             {resolved ? (
               <>
-                <span className="text-white/50">Linked address: </span>
-                <span className="font-mono text-ok">{resolved}</span>
+                <span className="text-foreground/45 uppercase tracking-wider text-xs">
+                  Linked address:{" "}
+                </span>
+                <span className="font-mono text-ok break-all">{resolved}</span>
               </>
             ) : (
               <span className="text-warn">No verified identity for that handle.</span>
@@ -120,23 +127,30 @@ export default function RegistryPage() {
       </section>
 
       {/* latest list */}
-      <section className="mt-8">
-        <h2 className="font-semibold mb-3">Latest verifications</h2>
+      <section className="mt-10">
+        <p className="eyebrow text-[0.7rem] text-foreground/40 mb-4">Latest verifications</p>
         {loading ? (
-          <p className="text-white/50 text-sm">Loading from the contract…</p>
+          <p className="text-foreground/45 text-sm flex items-center gap-2">
+            <span className="w-1.5 h-1.5 rounded-full bg-gold pulse-gold" /> Reading from the
+            contract…
+          </p>
         ) : latest.length === 0 ? (
-          <p className="text-white/50 text-sm">No verified identities yet.</p>
+          <p className="text-foreground/45 text-sm">No verified identities yet.</p>
         ) : (
-          <ul className="space-y-2">
+          <ul className="divide-y divide-gold/10 border border-gold/15">
             {latest.map((id) => (
-              <li key={`${id.platform}:${id.handle}`} className="card p-4 flex items-center justify-between">
+              <li
+                key={`${id.platform}:${id.handle}`}
+                className="p-5 flex items-center justify-between panel-hover bg-black"
+              >
                 <div>
                   <div className="font-medium">
-                    {id.platform}/<span className="text-brand-2">{id.handle}</span>
+                    <span className="text-foreground/50">{id.platform}/</span>
+                    <span className="text-gold-bright">{id.handle}</span>
                   </div>
-                  <div className="text-xs text-white/45 font-mono">{short(id.address)}</div>
+                  <div className="text-xs text-foreground/40 font-mono mt-0.5">{short(id.address)}</div>
                 </div>
-                <span className="text-xs px-2 py-1 rounded-full bg-ok/15 text-ok border border-ok/30">
+                <span className="display text-[0.65rem] tracking-[0.15em] px-3 py-1 bg-ok/10 text-ok border border-ok/30">
                   {id.status}
                 </span>
               </li>

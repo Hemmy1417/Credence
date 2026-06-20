@@ -1,33 +1,141 @@
 @import "tailwindcss";
 
 :root {
-  --background: #0b1020;
-  --foreground: #e7ecf5;
+  --background: #000000;
+  --foreground: #f3efe6;
+  --gold: #d4af6a;
+  --gold-bright: #f0d491;
+  --gold-deep: #a9803a;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --color-brand: #6366f1;
-  --color-brand-2: #22d3ee;
-  --color-ok: #34d399;
-  --color-warn: #fbbf24;
-  --color-bad: #f87171;
+  --color-gold: var(--gold);
+  --color-gold-bright: var(--gold-bright);
+  --color-gold-deep: var(--gold-deep);
+  --color-ok: #7fd1a0;
+  --color-warn: #e6b450;
+  --color-bad: #e57373;
+  --font-display: var(--font-oswald);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-body {
-  background:
-    radial-gradient(900px 500px at 80% -10%, rgba(99, 102, 241, 0.18), transparent 60%),
-    radial-gradient(700px 500px at -10% 10%, rgba(34, 211, 238, 0.12), transparent 60%),
-    var(--background);
-  color: var(--foreground);
-  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+html {
+  scroll-behavior: smooth;
 }
 
-.card {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 1rem;
+body {
+  background:
+    radial-gradient(1100px 600px at 50% -15%, rgba(212, 175, 106, 0.12), transparent 60%),
+    #000000;
+  color: var(--foreground);
+  font-family: var(--font-sans), system-ui, sans-serif;
 }
+
+/* faint engineering grid */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(212, 175, 106, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(212, 175, 106, 0.04) 1px, transparent 1px);
+  background-size: 64px 64px;
+  mask-image: radial-gradient(circle at 50% 30%, black, transparent 75%);
+  z-index: 0;
+}
+
+/* ---- type ---- */
+.display {
+  font-family: var(--font-display), sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  line-height: 0.95;
+  font-weight: 700;
+}
+.eyebrow {
+  font-family: var(--font-display), sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.32em;
+  font-weight: 500;
+}
+.gold-text {
+  background: linear-gradient(100deg, var(--gold-bright), var(--gold) 45%, var(--gold-deep));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* ---- surfaces ---- */
+.panel {
+  position: relative;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0.012));
+  border: 1px solid rgba(212, 175, 106, 0.16);
+}
+.panel-hover {
+  transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
+}
+.panel-hover:hover {
+  border-color: rgba(212, 175, 106, 0.45);
+  box-shadow: 0 0 0 1px rgba(212, 175, 106, 0.12), 0 18px 60px -30px rgba(212, 175, 106, 0.4);
+}
+.hairline {
+  border-top: 1px solid transparent;
+  border-image: linear-gradient(90deg, transparent, rgba(212, 175, 106, 0.7), transparent) 1;
+}
+
+/* angular notch corner (supercar geometry) */
+.notch {
+  clip-path: polygon(14px 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%, 0 14px);
+}
+
+/* ---- controls ---- */
+.btn-gold {
+  font-family: var(--font-display), sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-weight: 600;
+  color: #120d04;
+  background: linear-gradient(100deg, var(--gold-bright), var(--gold) 55%, var(--gold-deep));
+  transition: filter 0.2s ease, box-shadow 0.2s ease;
+}
+.btn-gold:hover {
+  filter: brightness(1.08);
+  box-shadow: 0 0 30px -6px rgba(212, 175, 106, 0.6);
+}
+.btn-gold:disabled {
+  filter: grayscale(0.6) brightness(0.6);
+  cursor: not-allowed;
+}
+.btn-ghost {
+  font-family: var(--font-display), sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-weight: 600;
+  border: 1px solid rgba(212, 175, 106, 0.4);
+  color: var(--gold-bright);
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+.btn-ghost:hover {
+  background: rgba(212, 175, 106, 0.08);
+  border-color: rgba(212, 175, 106, 0.7);
+}
+
+.field {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(212, 175, 106, 0.18);
+  transition: border-color 0.2s ease;
+}
+.field:focus {
+  outline: none;
+  border-color: rgba(212, 175, 106, 0.6);
+}
+
+@keyframes pulse-gold {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+.pulse-gold { animation: pulse-gold 1.4s ease-in-out infinite; }
