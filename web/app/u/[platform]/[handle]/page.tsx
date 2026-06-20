@@ -9,6 +9,7 @@ import {
   getIdentity,
   getScore,
   transferIdentity,
+  revokeIdentity,
   type Identity,
   type OnchainScore,
 } from "@/lib/credence";
@@ -32,6 +33,8 @@ export default function ProfilePage() {
   const [newAddr, setNewAddr] = useState("");
   const [transferring, setTransferring] = useState(false);
   const [manageMsg, setManageMsg] = useState("");
+  const [revoking, setRevoking] = useState(false);
+  const [confirmRevoke, setConfirmRevoke] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -73,6 +76,22 @@ export default function ProfilePage() {
       setManageMsg(e instanceof Error ? e.message : String(e));
     } finally {
       setTransferring(false);
+    }
+  }
+
+  async function onRevoke() {
+    if (!client) return;
+    setManageMsg("");
+    setRevoking(true);
+    try {
+      await revokeIdentity(client, platform as Platform, handle);
+      setConfirmRevoke(false);
+      await load();
+      setManageMsg("Revoked — this handle is unlinked and can be claimed again by anyone.");
+    } catch (e) {
+      setManageMsg(e instanceof Error ? e.message : String(e));
+    } finally {
+      setRevoking(false);
     }
   }
 
@@ -212,6 +231,39 @@ export default function ProfilePage() {
               {manageMsg && (
                 <p className="mt-3 text-sm text-foreground/60 normal-case break-words">{manageMsg}</p>
               )}
+
+              <div className="mt-6 border-t border-bad/20 pt-5">
+                <p className="text-xs uppercase tracking-wider text-foreground/40">Danger zone</p>
+                <p className="mt-2 text-sm text-foreground/50 normal-case">
+                  Revoke to unlink this handle from your wallet. The binding is released, so anyone
+                  (including you) can claim it again later by re-verifying.
+                </p>
+                {!confirmRevoke ? (
+                  <button
+                    onClick={() => setConfirmRevoke(true)}
+                    className="btn-ghost notch px-5 py-2.5 text-xs mt-4 !border-bad/40 !text-bad"
+                  >
+                    Revoke / unlink
+                  </button>
+                ) : (
+                  <div className="mt-4 flex flex-col sm:flex-row gap-3">
+                    <button
+                      onClick={onRevoke}
+                      disabled={revoking}
+                      className="btn-gold notch px-5 py-2.5 text-xs !bg-bad !text-white"
+                    >
+                      {revoking ? "Revoking…" : "Yes, revoke this handle"}
+                    </button>
+                    <button
+                      onClick={() => setConfirmRevoke(false)}
+                      disabled={revoking}
+                      className="btn-ghost notch px-5 py-2.5 text-xs"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                )}
+              </div>
             </section>
           )}
 

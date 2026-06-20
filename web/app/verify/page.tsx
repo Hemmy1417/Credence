@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { METHODS } from "@/lib/config";
+import { METHODS, explorerTxUrl } from "@/lib/config";
 import { CredenceMark } from "@/components/Logo";
 import { formatGen, useWallet } from "@/lib/wallet";
 import { requestChallenge, submitProof, type Challenge, type ProofResult } from "@/lib/credence";
@@ -34,6 +34,7 @@ export default function VerifyPage() {
   const [busy, setBusy] = useState<"" | "challenge" | "proof">("");
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
+  const [copiedTx, setCopiedTx] = useState(false);
 
   const [genMsg, setGenMsg] = useState("");
   const [funding, setFunding] = useState(false);
@@ -376,6 +377,39 @@ export default function VerifyPage() {
                     exact code. Then try Step 2 again.
                   </p>
                 </>
+              )}
+
+              {result.txHash && (
+                <div className="mt-6 border-t border-gold/15 pt-4">
+                  <p className="text-xs uppercase tracking-wider text-foreground/40">
+                    On-chain transaction
+                  </p>
+                  <div className="mt-2 flex items-center gap-3 flex-wrap">
+                    <code className="font-mono text-xs text-foreground/70 break-all">
+                      {result.txHash}
+                    </code>
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText(result.txHash);
+                        setCopiedTx(true);
+                        setTimeout(() => setCopiedTx(false), 1500);
+                      }}
+                      className="btn-ghost notch px-3 py-1 text-[0.6rem]"
+                    >
+                      {copiedTx ? "Copied" : "Copy"}
+                    </button>
+                    {explorerTxUrl(result.txHash) && (
+                      <a
+                        href={explorerTxUrl(result.txHash)}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-xs text-gold hover:text-gold-bright underline underline-offset-4"
+                      >
+                        View on explorer ↗
+                      </a>
+                    )}
+                  </div>
+                </div>
               )}
             </section>
           )}

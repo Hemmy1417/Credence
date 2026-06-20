@@ -35,7 +35,7 @@ export type Stats = {
   by_platform: Record<string, number>;
 };
 
-export type ProofResult = { verified: boolean; identity: Identity | null };
+export type ProofResult = { verified: boolean; identity: Identity | null; txHash: string };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Client = any;
@@ -144,13 +144,13 @@ export async function submitProof(
       `${platform}/${handle} is already bound to ${existing.address}. It can't be claimed from a different wallet. (The owner can transfer it by revoking from that wallet first.)`,
     );
   }
-  await writeAndWait(client, "submit_proof", [platform, handle, evidenceUri]);
+  const txHash = await writeAndWait(client, "submit_proof", [platform, handle, evidenceUri]);
   const identity = await getIdentity(platform, handle);
   const verified =
     !!identity &&
     identity.status === "VERIFIED" &&
     identity.address.toLowerCase() === address.toLowerCase();
-  return { verified, identity: verified ? identity : null };
+  return { verified, identity: verified ? identity : null, txHash: asString(txHash) };
 }
 
 // ---- v2: canonical on-chain Credence Score ----
@@ -169,4 +169,14 @@ export async function transferIdentity(
   newAddress: string,
 ): Promise<void> {
   await writeAndWait(client, "transfer_identity", [platform, handle, newAddress]);
+}
+
+// ---- owner-only revoke: unlinks a verified handle (status -> REVOKED).
+// After this the handle is claimable again by anyone (the binding is released).
+export async function revokeIdentity(
+  client: Client,
+  platform: Platform,
+  handle: string,
+): Promise<void> {
+  await writeAndWait(client, "revoke_identity", [platform, handle]);
 }

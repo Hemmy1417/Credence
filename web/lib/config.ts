@@ -8,6 +8,14 @@ export const EXPLORER_URL = process.env.NEXT_PUBLIC_EXPLORER_URL || "";
 // when NEXT_PUBLIC_CONTRACT_ADDRESS is missing (e.g. forgotten on Vercel).
 export const CONTRACT_CONFIGURED = /^0x[a-fA-F0-9]{40}$/.test(CONTRACT_ADDRESS);
 
+// Explorer link for a transaction hash. Returns "" unless NEXT_PUBLIC_EXPLORER_URL
+// is configured, so we never ship a broken link — the tx hash itself is always
+// shown as the verifiable artifact regardless.
+export function explorerTxUrl(hash: string): string {
+  if (!EXPLORER_URL || !hash) return "";
+  return `${EXPLORER_URL.replace(/\/$/, "")}/tx/${hash}`;
+}
+
 // First-class platforms the v2 contract accepts.
 export const PLATFORMS = ["github", "x", "domain", "discord", "url"] as const;
 export type Platform = (typeof PLATFORMS)[number];
