@@ -141,7 +141,7 @@ export default function VerifyPage() {
             </div>
             <p className="mt-3 text-sm text-foreground/50 normal-case">
               {gasSponsored
-                ? "Studionet sponsors gas, so verifying is free here. On Testnet Bradbury or mainnet you'd top up GEN before verifying — this step handles that."
+                ? "Studionet sponsors gas, so verifying is free here. On mainnet you'd top up GEN before verifying — this step handles that."
                 : "You need GEN to cover the gas fee before you can verify."}
             </p>
             <div className="mt-4 flex items-center gap-4 flex-wrap">
@@ -224,6 +224,66 @@ export default function VerifyPage() {
                   >
                     {selectedMethod.cta}
                   </a>
+                )}
+
+                {selectedMethod.id === "github" && (
+                  <details className="mt-5 border-t border-gold/15 pt-4 group">
+                    <summary className="cursor-pointer list-none flex items-center gap-2 text-sm text-gold hover:text-gold-bright select-none">
+                      <span className="transition-transform group-open:rotate-90">›</span>
+                      How to post your code on gist.github.com
+                    </summary>
+                    <ol className="mt-4 space-y-3 text-sm text-foreground/65 normal-case">
+                      <li className="flex gap-3">
+                        <span className="display gold-text shrink-0">1</span>
+                        <span>
+                          Sign in to GitHub as{" "}
+                          <strong className="text-gold-bright">{handle.trim() || "your username"}</strong>,
+                          then open{" "}
+                          <a
+                            href="https://gist.github.com"
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-gold underline underline-offset-4 hover:text-gold-bright"
+                          >
+                            gist.github.com
+                          </a>
+                          .
+                        </span>
+                      </li>
+                      <li className="flex gap-3">
+                        <span className="display gold-text shrink-0">2</span>
+                        <span>
+                          In the big content box, paste your code exactly:{" "}
+                          <code className="font-mono text-gold-bright">{challenge.challenge_code}</code>.
+                        </span>
+                      </li>
+                      <li className="flex gap-3">
+                        <span className="display gold-text shrink-0">3</span>
+                        <span>
+                          Give the file any name — e.g.{" "}
+                          <code className="font-mono text-foreground/80">credence.txt</code>.
+                        </span>
+                      </li>
+                      <li className="flex gap-3">
+                        <span className="display gold-text shrink-0">4</span>
+                        <span>
+                          Click the green button and make sure it says{" "}
+                          <strong className="text-gold-bright">Create public gist</strong> — not secret.
+                          It has to be public so the validators can read it.
+                        </span>
+                      </li>
+                      <li className="flex gap-3">
+                        <span className="display gold-text shrink-0">5</span>
+                        <span>
+                          Copy the page URL from your browser&apos;s address bar (it looks like{" "}
+                          <code className="font-mono text-foreground/80">
+                            gist.github.com/{handle.trim() || "you"}/…
+                          </code>
+                          ) and paste it into Step 02 below.
+                        </span>
+                      </li>
+                    </ol>
+                  </details>
                 )}
               </div>
             )}
