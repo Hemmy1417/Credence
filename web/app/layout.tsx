@@ -3,6 +3,7 @@ import { Geist, Geist_Mono, Oswald } from "next/font/google";
 import Link from "next/link";
 import { CredenceWordmark } from "@/components/Logo";
 import { ConnectButton } from "@/components/ConnectButton";
+import { ConfigNotice } from "@/components/ConfigNotice";
 import { WalletProvider } from "@/lib/wallet";
 import "./globals.css";
 
@@ -57,7 +58,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               </div>
             </nav>
           </header>
-          <main className="flex-1 relative z-10">{children}</main>
+          <main className="flex-1 relative z-10">
+            <ConfigNotice />
+            {children}
+          </main>
           <footer className="border-t border-gold/15 relative z-10">
             <div className="mx-auto max-w-6xl px-5 py-7 flex flex-wrap items-center justify-between gap-3 text-xs text-foreground/40">
               <span className="eyebrow text-[0.65rem] text-gold/70">Sealed on GenLayer</span>

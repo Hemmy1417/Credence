@@ -3,6 +3,11 @@
 export const CONTRACT_ADDRESS = (process.env.NEXT_PUBLIC_CONTRACT_ADDRESS || "") as `0x${string}`;
 export const EXPLORER_URL = process.env.NEXT_PUBLIC_EXPLORER_URL || "";
 
+// True only when a real 0x… address (20 bytes / 40 hex chars) is configured.
+// Used to show a clear setup notice instead of silently rendering empty data
+// when NEXT_PUBLIC_CONTRACT_ADDRESS is missing (e.g. forgotten on Vercel).
+export const CONTRACT_CONFIGURED = /^0x[a-fA-F0-9]{40}$/.test(CONTRACT_ADDRESS);
+
 // First-class platforms the v2 contract accepts.
 export const PLATFORMS = ["github", "x", "domain", "discord", "url"] as const;
 export type Platform = (typeof PLATFORMS)[number];
