@@ -132,6 +132,18 @@ export async function submitProof(
   handle: string,
   evidenceUri: string,
 ): Promise<ProofResult> {
+  // Binding guard: a handle already verified by a DIFFERENT wallet can't be claimed.
+  // The owner can still re-verify (refresh) their own, or release it via revoke first.
+  const existing = await getIdentity(platform, handle);
+  if (
+    existing &&
+    existing.status === "VERIFIED" &&
+    existing.address.toLowerCase() !== address.toLowerCase()
+  ) {
+    throw new Error(
+      `${platform}/${handle} is already bound to ${existing.address}. It can't be claimed from a different wallet. (The owner can transfer it by revoking from that wallet first.)`,
+    );
+  }
   await writeAndWait(client, "submit_proof", [platform, handle, evidenceUri]);
   const identity = await getIdentity(platform, handle);
   const verified =
