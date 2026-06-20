@@ -44,6 +44,11 @@ Testnet Bradbury** for stronger final testing.
 > version line → warn *"runner comment does not start with version"* + `invalid_contract`.
 > The `<hash>` is **pinned to the GenVM build** of the target network — copy it from a
 > built-in example in that environment's Studio rather than hardcoding a guess.
+>
+> **Keep the leading comment block to ONLY those two lines.** GenVM parses the leading
+> consecutive `#` lines as the runner header; extra comment lines — or any non-ASCII char
+> (e.g. an em-dash `—`) in that block — can break deploy. Put all other notes in `docs/` or
+> inside the class body, then go straight to `from genlayer import *`.
 
 ### State
 - `owner: str`

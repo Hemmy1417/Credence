@@ -1,18 +1,8 @@
 # v0.1.0
 # { "Depends": "py-genlayer:1jb45aa8ynh2a9c9xn3b7qqh8sm5q93hwfp7jqmwsfhh8jpz09h6" }
-# ^ REQUIRED runner header (first TWO lines): version line then Depends. Hash is pinned to
-#   this Studio's GenVM build (copied from a built-in example); re-copy if you change network.
-#
-# Credence — Intelligent Contract (Phase 1 MVP)
-# On-chain identity verification on GenLayer.
-#
-# Patterns aligned to a known-good contract that loads in this Studio build:
-#   - state uses only TreeMap / u256 / str  (no DynArray — that build can't schema-gen it)
-#   - LLM call:   gl.nondet.exec_prompt(prompt)
-#   - web fetch:  gl.nondet.web.render(url, mode='text')   (inside an eq_principle fn)
-#   - consensus:  gl.eq_principle.prompt_comparative(fn, principle)
-#   - errors:     raise gl.vm.UserError(...)
-#   - sender:     gl.message.sender_address  (MessageType has sender_address, NOT sender_account)
+# IMPORTANT: keep ONLY the two lines above as leading comments. GenVM parses the leading
+# comment block as the runner header — extra comment lines (or non-ASCII chars) here can
+# break deploy. All design/SDK notes live in docs/TRD.md instead.
 
 from genlayer import *
 import json
