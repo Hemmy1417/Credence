@@ -213,6 +213,19 @@ export default function ProfilePage() {
                 You own this identity. Transfer it to a new wallet — the binding moves with it, and
                 this handle can never be claimed by anyone else.
               </p>
+
+              <div className="mt-4">
+                <Link
+                  href={`/verify?platform=${platform}&handle=${handle}`}
+                  className="btn-ghost notch inline-block px-5 py-2.5 text-xs"
+                >
+                  Re-verify / refresh proof →
+                </Link>
+                <p className="mt-2 text-xs text-foreground/40 normal-case">
+                  Re-runs the AI check against your evidence — useful after editing a post, or to
+                  refresh confidence.
+                </p>
+              </div>
               <div className="mt-4 flex flex-col sm:flex-row gap-3">
                 <input
                   value={newAddr}

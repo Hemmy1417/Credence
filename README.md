@@ -56,6 +56,16 @@ npm run dev                  # http://localhost:3000
 ```
 The deployed contract source is `contracts/credence_v2.py` (deploy/interact via GenLayer Studio).
 
+## Testing
+```bash
+cd web
+npm test                       # fast, deterministic unit tests (score logic, config invariants)
+RUN_CONTRACT_SMOKE=1 npm test  # also runs read-only smoke tests against the live Studionet contract
+```
+Unit tests cover the Credence Score matrix (input validation, weighting, dedup, tier boundaries) and
+the verify-method config invariants. The opt-in smoke test verifies `get_stats` / `get_score` /
+`resolve_handle` against the deployed contract without flaking the default run.
+
 ## Demo evidence (verify it yourself)
 A real, already-verified identity reviewers can inspect right now:
 

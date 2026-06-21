@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { METHODS, explorerTxUrl } from "@/lib/config";
 import { CredenceMark } from "@/components/Logo";
@@ -38,6 +38,18 @@ export default function VerifyPage() {
 
   const [genMsg, setGenMsg] = useState("");
   const [funding, setFunding] = useState(false);
+
+  // Prefill from a re-verify deep-link (e.g. /verify?platform=github&handle=hemmy1417).
+  useEffect(() => {
+    const sp = new URLSearchParams(window.location.search);
+    const plat = sp.get("platform");
+    const h = sp.get("handle");
+    if (plat) {
+      const m = METHODS.find((x) => x.platform === plat.toLowerCase());
+      if (m) setMethodId(m.id);
+    }
+    if (h) setHandle(h.replace(/^@/, ""));
+  }, []);
 
   const connected = !!client && !!address;
   const gasReady = gasSponsored || (balanceWei != null && balanceWei > 0n);
