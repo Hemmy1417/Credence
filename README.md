@@ -3,10 +3,11 @@
 > Prove you control a social account and link it to your wallet — verified by a GenLayer
 > Intelligent Contract, not a centralized database.
 
-**Status:** ✅ **Phase 1 + 2 working.** The contract is live on Studionet and verified a real GitHub
-gist as `VERIFIED` (score 98, HIGH confidence) via a 3-model AI validator panel reaching consensus.
-The Next.js frontend (`web/`) reads the live registry and submits challenges/proofs from the
-browser. Next: Phase 3 hardening + Phase 4 deploy to Vercel.
+**Status:** ✅ **Deployed and live (Phase 4 complete).** The v2 Intelligent Contract runs on
+Studionet and has verified real GitHub **and** X identities as `VERIFIED` (HIGH confidence) via an
+AI validator panel reaching consensus. The Next.js frontend is live on Vercel — connect a wallet,
+request a code, submit a proof, and browse the public registry, profiles and on-chain Credence
+Scores entirely from the browser. Remaining: Phase 5 demo polish (video + screenshots).
 
 ## Project summary
 On-chain accounts are anonymous. Credence lets a user request a unique challenge code, post
@@ -53,27 +54,62 @@ npm install
 cp .env.example .env.local   # contract address is prefilled for Studionet
 npm run dev                  # http://localhost:3000
 ```
-The contract source is `contracts/credence.py` (deploy/interact via GenLayer Studio).
+The deployed contract source is `contracts/credence_v2.py` (deploy/interact via GenLayer Studio).
 
-## Demo evidence (sample to test quickly)
-_TODO (Phase 2/5): a known-good public gist URL + handle reviewers can paste._
+## Demo evidence (verify it yourself)
+A real, already-verified identity reviewers can inspect right now:
+
+| Field | Value |
+|---|---|
+| Profile | https://credencev2.vercel.app/u/github/hemmy1417 |
+| Platform / handle | `github` / `hemmy1417` |
+| Evidence (public gist) | https://gist.github.com/Hemmy1417/5e288d4697e426c6788551c29dea88d7 |
+| Public lookup API | `GET /api/verified/0x10DbF82A8bb191bd1c082de5Ef915E998Aa5CCD7` |
+
+To run the full flow yourself: open the live app → **Verify** → create an Instant Wallet (gas is
+sponsored on Studionet) → choose **GitHub** → **Get code** → paste that code into a new **public**
+gist → submit the gist URL. The AI panel reaches a verdict and, on `VERIFIED`, seals the
+handle↔address link on-chain.
+
+## Demo script (90 seconds)
+1. **Problem** — on-chain wallets are anonymous; there's no trustless way to know who's behind one.
+2. Open the live app, go to **Verify**, create an **Instant Wallet** (note: gas sponsored).
+3. Pick **GitHub**, enter a username, click **Get code** — show the unique, wallet-bound code.
+4. Paste the code into a **public gist**, copy its URL.
+5. Click **Submit proof** — show the pending state, then the **VERIFIED** verdict card with the
+   on-chain transaction hash.
+6. Open **View public profile** — show the **Credence Score** (read on-chain), the shareable badge,
+   and the embeddable Markdown.
+7. Open the **Registry** — the new identity appears in the public ledger; resolve handle → address.
+8. Mention the **binding rule** (one handle, one wallet) and owner controls (**transfer / revoke**).
+9. Close on **known limitations** + roadmap below.
+
+## Screenshots
+_Add images to `docs/screenshots/` and reference them here, e.g.:_
+- `![Verify flow](docs/screenshots/verify.png)` — requesting a code + submitting a gist.
+- `![Verdict](docs/screenshots/verdict.png)` — the VERIFIED card with the on-chain tx hash.
+- `![Profile](docs/screenshots/profile.png)` — public profile with the Credence Score + badge.
+- `![Registry](docs/screenshots/registry.png)` — the public verified registry.
 
 ## Known limitations
-- MVP verifies reliably-fetchable sources (GitHub / public URLs). X/Twitter and similar
-  block unauthenticated fetches and are a Phase-2 stretch.
-- Verification is time-of-check: a post deleted afterwards doesn't auto-revoke (audit hash +
-  manual revoke/re-verify provided).
-- AI/web judgement depends on source availability and LLM behaviour; unclear cases return
-  `NEEDS_MORE_EVIDENCE` rather than passing.
+- **Reliable vs experimental platforms.** GitHub, a domain, and any public URL are anonymously
+  fetchable and verify reliably. **X and Discord serve bots a login wall / JS shell**, so their
+  proofs often can't be read and return `NEEDS_MORE_EVIDENCE` — they're labelled *experimental* in
+  the UI (X *can* succeed, just not dependably).
+- **Time-of-check.** Verification reflects the moment of submission; a post deleted afterwards
+  doesn't auto-revoke. The owner can `transfer` or `revoke` the link on-chain at any time.
+- **AI/web variance.** Judgement depends on source availability and LLM behaviour; unclear cases
+  return `NEEDS_MORE_EVIDENCE` rather than passing.
 
 ## Roadmap
-- Phase 2: X/Twitter + more platforms, multi-handle profiles.
-- Phase 3: disputes/appeals, optional Supabase registry cache + search.
-- Phase 4: aggregate "Credence score" + query SDK for other dApps.
+- **Done:** multi-platform verification, one-handle↔one-wallet binding, owner transfer + revoke,
+  canonical on-chain Credence Score, public lookup API + embeddable badge + social cards.
+- **Next:** disputes/appeals, freshness + re-verify, optional Supabase registry cache + search.
+- **Later:** a drop-in "gate by Credence Score" widget/SDK for other dApps; Testnet Bradbury.
 
 ## Repo layout
 ```
 docs/        PRD.md TRD.md SDLC.md SCHEMAS.md AGENT_BUILD_PROMPT.md
-contracts/   credence.py            (the deployed Intelligent Contract)
-web/         Next.js + GenLayerJS frontend (landing / verify / registry)
+contracts/   credence_v2.py         (the deployed Intelligent Contract; credence.py is v1)
+web/         Next.js + GenLayerJS frontend (landing / verify / registry / profile / developers)
 ```
