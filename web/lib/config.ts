@@ -1,16 +1,18 @@
 // Credence frontend config. The contract address comes from the environment;
 // the network (Studionet, chain 61999) is provided by genlayer-js's `studionet` chain.
 export const CONTRACT_ADDRESS = (process.env.NEXT_PUBLIC_CONTRACT_ADDRESS || "") as `0x${string}`;
-export const EXPLORER_URL = process.env.NEXT_PUBLIC_EXPLORER_URL || "";
+// Defaults to the GenLayer Studio Explorer (Studionet), which serves tx pages at
+// /tx/<hash>. Override via env for another network/explorer.
+export const EXPLORER_URL =
+  process.env.NEXT_PUBLIC_EXPLORER_URL || "https://explorer-studio.genlayer.com";
 
 // True only when a real 0x… address (20 bytes / 40 hex chars) is configured.
 // Used to show a clear setup notice instead of silently rendering empty data
 // when NEXT_PUBLIC_CONTRACT_ADDRESS is missing (e.g. forgotten on Vercel).
 export const CONTRACT_CONFIGURED = /^0x[a-fA-F0-9]{40}$/.test(CONTRACT_ADDRESS);
 
-// Explorer link for a transaction hash. Returns "" unless NEXT_PUBLIC_EXPLORER_URL
-// is configured, so we never ship a broken link — the tx hash itself is always
-// shown as the verifiable artifact regardless.
+// Explorer link for a transaction hash. The tx hash itself is always shown as the
+// verifiable artifact; this just makes it clickable.
 export function explorerTxUrl(hash: string): string {
   if (!EXPLORER_URL || !hash) return "";
   return `${EXPLORER_URL.replace(/\/$/, "")}/tx/${hash}`;

@@ -44,17 +44,15 @@ describe("explorerTxUrl", () => {
     vi.resetModules();
   });
 
-  it("returns '' when no explorer is configured (no broken link shipped)", () => {
-    expect(explorerTxUrl(hash)).toBe("");
+  it("defaults to the GenLayer Studio Explorer when no env override is set", () => {
+    expect(explorerTxUrl(hash)).toBe("https://explorer-studio.genlayer.com/tx/0xabc123");
   });
 
-  it("returns '' for an empty hash even when configured", async () => {
-    vi.stubEnv("NEXT_PUBLIC_EXPLORER_URL", "https://explorer.example");
-    const { explorerTxUrl: fn } = await import("./config");
-    expect(fn("")).toBe("");
+  it("returns '' for an empty hash (never a bare/invalid link)", () => {
+    expect(explorerTxUrl("")).toBe("");
   });
 
-  it("builds <base>/tx/<hash> and strips a trailing slash", async () => {
+  it("honors an env override and strips a trailing slash", async () => {
     vi.stubEnv("NEXT_PUBLIC_EXPLORER_URL", "https://explorer.example/");
     const { explorerTxUrl: fn } = await import("./config");
     expect(fn(hash)).toBe("https://explorer.example/tx/0xabc123");
