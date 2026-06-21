@@ -20,7 +20,7 @@ trust state — none of which a normal smart contract can do, and which a normal
 do *trustlessly*.
 
 ## Live demo
-_TODO (Phase 4): Vercel link._
+**https://credencev2.vercel.app** — live on Vercel, reading the v2 contract on Studionet.
 
 ## Contract details
 | Field | Value |
