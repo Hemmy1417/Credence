@@ -186,6 +186,7 @@ export default function VerifyPage() {
                 {METHODS.map((m) => (
                   <option key={m.id} value={m.id} className="bg-black">
                     {m.label}
+                    {m.experimental ? " (experimental)" : ""}
                   </option>
                 ))}
               </select>
@@ -203,6 +204,15 @@ export default function VerifyPage() {
                 {busy === "challenge" ? "Working…" : "Get code"}
               </button>
             </div>
+
+            {selectedMethod.experimental && selectedMethod.note && (
+              <div className="mt-4 flex gap-2.5 rounded border border-warn/40 bg-warn/10 px-3 py-2.5">
+                <span className="text-warn shrink-0">⚠</span>
+                <p className="text-xs text-foreground/70 normal-case">
+                  <strong className="text-warn">Experimental.</strong> {selectedMethod.note}
+                </p>
+              </div>
+            )}
 
             {challenge && (
               <div className="mt-5 border border-gold/20 bg-black/50 p-5">

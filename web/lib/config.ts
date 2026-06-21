@@ -21,6 +21,9 @@ export const PLATFORMS = ["github", "x", "domain", "discord", "url"] as const;
 export type Platform = (typeof PLATFORMS)[number];
 
 // User-facing verification methods. Each maps to a first-class contract platform.
+// `experimental` flags platforms whose evidence the validators can't read anonymously
+// (X and Discord serve a login wall / JS shell to bots), so verification usually
+// returns NEEDS_MORE_EVIDENCE. We surface that honestly rather than letting it fail silently.
 export type Method = {
   id: string;
   label: string;
@@ -30,8 +33,11 @@ export type Method = {
   hint: string;
   cta?: string;
   ctaUrl?: string;
+  experimental?: boolean;
+  note?: string;
 };
 
+// Reliable methods first (evidence is anonymously fetchable), experimental last.
 export const METHODS: Method[] = [
   {
     id: "github",
@@ -44,28 +50,12 @@ export const METHODS: Method[] = [
     ctaUrl: "https://gist.github.com",
   },
   {
-    id: "x",
-    label: "X / Twitter",
-    platform: "x",
-    handlePlaceholder: "your @handle",
-    evidencePlaceholder: "https://x.com/you/status/…",
-    hint: "Post the exact code in a public tweet, then paste the tweet URL.",
-  },
-  {
     id: "domain",
     label: "Website / Domain",
     platform: "domain",
     handlePlaceholder: "yourdomain.com",
     evidencePlaceholder: "https://yourdomain.com/.well-known/credence.txt",
-    hint: "Host the code at https://yourdomain.com/.well-known/credence.txt, then paste that URL.",
-  },
-  {
-    id: "discord",
-    label: "Discord",
-    platform: "discord",
-    handlePlaceholder: "your Discord username",
-    evidencePlaceholder: "https://… link to a public message/profile",
-    hint: "Put the exact code on a public Discord message or profile, then paste its link.",
+    hint: "Host the code at https://yourdomain.com/.well-known/credence.txt, then paste that URL. The page must be served from that exact domain.",
   },
   {
     id: "url",
@@ -74,5 +64,25 @@ export const METHODS: Method[] = [
     handlePlaceholder: "an identifier (e.g. your name)",
     evidencePlaceholder: "https://… a public page you control",
     hint: "Put the exact code on any public page you control, then paste its URL.",
+  },
+  {
+    id: "x",
+    label: "X / Twitter",
+    platform: "x",
+    handlePlaceholder: "your @handle",
+    evidencePlaceholder: "https://x.com/you/status/…",
+    hint: "Post the exact code in a public tweet, then paste the tweet URL.",
+    experimental: true,
+    note: "X serves bots a login wall instead of the post, so the validators usually can't read your tweet — expect “needs more evidence.” For a reliable proof, link the same code from a public page (GitHub gist, your site) and verify with that method instead.",
+  },
+  {
+    id: "discord",
+    label: "Discord",
+    platform: "discord",
+    handlePlaceholder: "your Discord username",
+    evidencePlaceholder: "https://… link to a public message/profile",
+    hint: "Put the exact code on a public Discord message or profile, then paste its link.",
+    experimental: true,
+    note: "Discord requires login to view messages, so the validators can't fetch your proof anonymously — verification will usually return “needs more evidence.” Use GitHub, a domain, or a public URL for a reliable proof.",
   },
 ];
